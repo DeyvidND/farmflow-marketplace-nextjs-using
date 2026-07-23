@@ -10,6 +10,17 @@ export interface CoverCrop {
   shape?: 'square' | 'tall' | 'wide' | null;
 }
 
+/** Resolved member of a кошница (bundle) — inline on the bundle product itself.
+ *  There is NO bundleParentId anywhere; membership arrives only this way. */
+export interface PublicBundleItem {
+  productId: string;
+  name: string;
+  slug: string | null;
+  image: string | null;
+  quantity: number;
+  priceStotinki: number;
+}
+
 export interface PublicProductVariant {
   id: string;
   label: string;
@@ -42,6 +53,17 @@ export interface Product {
   salePriceStotinki?: number | null;
   compareAtPriceStotinki?: number | null;
   variants?: PublicProductVariant[];
+  /** Curated free-text content lines for a кошница (legacy, informational). */
+  bundleItems?: string[];
+  /** Resolved кошница members — present only when category === 'bundle'. */
+  bundleProducts?: PublicBundleItem[];
+  /** Loss-leader: product can't be ordered alone. */
+  requiresCompanion?: boolean;
+  /** EUR-cents the OTHER cart lines must total before this product unlocks.
+   *  null/absent/0 = any one other product suffices. */
+  companionMinPriceStotinki?: number | null;
+  /** Positive alias of !courierDisabled, sent by the API. */
+  courierShippable?: boolean;
 }
 
 export interface Farmer {
@@ -65,6 +87,25 @@ export interface Farmer {
   tier: number;
   createdAt: string | null;
   courierReady?: boolean;
+  /** Long-form „За фермата" story (separate from the short bio). */
+  story?: string | null;
+  /** КЗП/НАП seller identity — legally required public disclosure once filled. */
+  legal?: FarmerLegal | null;
+  /** Geocoded farm coordinates (from the registered address); null = no pin. */
+  lat?: number | null;
+  lng?: number | null;
+}
+
+/** Legal seller identity (farmer-as-seller marketplace model). All optional —
+ *  operators fill it gradually; render seller blocks only when `name` is set. */
+export interface FarmerLegal {
+  kind?: string | null;
+  name?: string | null;
+  eik?: string | null;
+  vatNumber?: string | null;
+  address?: string | null;
+  regNo?: string | null;
+  confirmedAt?: string | null;
 }
 
 /** Tier-2 branding control layer (mirrors FarmFlow @fermeribg/types Tier2Branding). */
@@ -128,4 +169,6 @@ export interface Bootstrap {
   farmerOfWeek?: { id: string; note: string | null } | null;
   availability?: { productId: string; remaining: number }[];
   bestSellerIds?: string[];
+  /** Curated storefront reviews for the home page (shape owned by the API). */
+  homeReviews?: unknown[];
 }
