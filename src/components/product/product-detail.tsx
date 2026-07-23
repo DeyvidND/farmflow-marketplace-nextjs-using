@@ -17,6 +17,7 @@ import {
   priceDisplay, discountPercent, hasVariants, allVariantsSoldOut, variantPriceStotinki,
 } from "@/lib/pricing";
 import { legalIdLine } from "@/lib/legal";
+import { companionSatisfied } from "@/lib/companion";
 import type { Product, FarmerLegal } from "@/lib/types";
 
 function initials(name: string) {
@@ -40,7 +41,7 @@ export function ProductDetail({
   farmerLegal: FarmerLegal | null;
   remaining: number | null;
 }) {
-  const { add } = useCart();
+  const { add, items } = useCart();
   const gallery = p.images?.length ? p.images : p.imageUrl ? [p.imageUrl] : [];
   const [main, setMain] = useState(gallery[0] ?? null);
   const bundle = isBundle(p);
@@ -61,6 +62,9 @@ export function ProductDetail({
   const discount = discountPercent(pd);
   const soldOut = (remaining !== null && remaining === 0) || allVariantsSoldOut(p);
   const priceStotinki = selVariant ? variantPriceStotinki(selVariant) : pd.headlineStotinki;
+  const companionMin = p.companionMinPriceStotinki ?? null;
+  const showCompanionNotice =
+    !!p.requiresCompanion && !soldOut && !companionSatisfied(p.id, companionMin, items);
 
   const onAdd = () => {
     const label = selVariant ? `${p.name} · ${selVariant.label}` : p.name;
@@ -259,6 +263,17 @@ export function ProductDetail({
           {remaining !== null && (
             <div className="mt-4 text-sm font-semibold text-primary">
               {remaining > 0 ? `${remaining} в наличност` : "Изчерпан"}
+            </div>
+          )}
+
+          {showCompanionNotice && (
+            <div className="mt-4 rounded-2xl bg-accent p-4 text-[13.5px] text-accent-foreground">
+              <p>
+                <strong className="font-bold">Промо цена — върви с поръчката.</strong>{" "}
+                {companionMin
+                  ? `Този продукт е на специална цена, затова се добавя заедно с други продукти на обща стойност поне ${eur(companionMin)}. Щом количката ги достигне, бутонът се отключва автоматично.`
+                  : `Този продукт е на специална цена, затова се добавя заедно с още поне един друг продукт. Щом го добавиш, бутонът се отключва автоматично.`}
+              </p>
             </div>
           )}
 

@@ -5,10 +5,12 @@ import { Minus, Plus, Trash2, ShoppingBasket, ArrowRight } from "lucide-react";
 import { useCart } from "@/components/cart/cart-provider";
 import { buttonVariants } from "@/components/ui/button";
 import { eurFromLv, EUR_TO_BGN } from "@/lib/money";
+import { unsatisfiedCompanions, companionMessage } from "@/lib/companion";
 import { cn } from "@/lib/utils";
 
 export function CartView() {
   const { items, setQty, remove, total } = useCart();
+  const unmetCompanions = unsatisfiedCompanions(items);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
@@ -58,9 +60,23 @@ export function CartView() {
               </span>
             </div>
             <p className="mt-1 text-[13px] text-muted-foreground">Доставката се изчислява на следващата стъпка.</p>
-            <Link href="/checkout" className={cn(buttonVariants(), "mt-4 h-12 w-full rounded-xl text-base font-bold")}>
-              Към поръчката <ArrowRight className="size-[18px]" />
-            </Link>
+            {unmetCompanions.length > 0 && (
+              <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-[13px] text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
+                {companionMessage(unmetCompanions[0])}
+              </div>
+            )}
+            {unmetCompanions.length > 0 ? (
+              <span
+                aria-disabled="true"
+                className={cn(buttonVariants(), "mt-4 h-12 w-full cursor-not-allowed rounded-xl text-base font-bold opacity-50 pointer-events-none")}
+              >
+                Към поръчката <ArrowRight className="size-[18px]" />
+              </span>
+            ) : (
+              <Link href="/checkout" className={cn(buttonVariants(), "mt-4 h-12 w-full rounded-xl text-base font-bold")}>
+                Към поръчката <ArrowRight className="size-[18px]" />
+              </Link>
+            )}
           </div>
         </>
       )}

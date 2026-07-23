@@ -12,6 +12,7 @@ import { eurFromLv, EUR_TO_BGN } from "@/lib/money";
 import { PUBLIC_BASE } from "@/lib/config";
 import { distinctSellers } from "@/lib/sellers";
 import { CARRIER_METHODS } from "@/lib/courier";
+import { unsatisfiedCompanions, companionMessage } from "@/lib/companion";
 
 type Method = "pickup" | "address";
 
@@ -39,6 +40,12 @@ export function CheckoutView() {
     e.preventDefault();
     if (!items.length) {
       router.replace("/cart");
+      return;
+    }
+    const unmetCompanions = unsatisfiedCompanions(items);
+    if (unmetCompanions.length > 0) {
+      toast.error(companionMessage(unmetCompanions[0]));
+      router.push("/cart");
       return;
     }
     if (!form.customerName.trim() || !form.customerPhone.trim()) {

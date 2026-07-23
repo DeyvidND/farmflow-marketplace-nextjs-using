@@ -12,8 +12,9 @@ import { CfImg } from "@/components/cf-img";
 import { cfImage } from "@/lib/img";
 import { coverCropStyle, shapeAspect } from "@/lib/cover";
 import { isRecent, isBundle, bundleMemberPhotos } from "@/lib/catalog";
-import { eur, bgn } from "@/lib/money";
+import { eur, bgn, eurFromLv } from "@/lib/money";
 import { priceDisplay, discountPercent, hasVariants, allVariantsSoldOut } from "@/lib/pricing";
+import { companionSatisfied, companionShortfall } from "@/lib/companion";
 import type { Product } from "@/lib/types";
 
 function initials(name: string) {
@@ -39,13 +40,19 @@ export function ProductCard({
   remaining?: number | null;
   className?: string;
 }) {
-  const { add } = useCart();
+  const { add, items } = useCart();
   const href = p.slug ? `/product/${p.slug}` : "/shop";
   const pd = priceDisplay(p);
   const discount = discountPercent(pd);
   const hasV = hasVariants(p);
   const hasWindow = remaining !== null && remaining !== undefined;
   const soldOut = (hasWindow && remaining === 0) || allVariantsSoldOut(p);
+  // Loss-leader companion lock: never overlay on a sold-out button, and never
+  // on a variant product (the card only has a "Избери вариант" link there —
+  // the actual lock lives on the PDP add-to-cart once a variant is chosen).
+  const companionMin = p.companionMinPriceStotinki ?? null;
+  const isCompanionManaged = !!p.requiresCompanion && !soldOut && !hasV;
+  const companionOk = isCompanionManaged ? companionSatisfied(p.id, companionMin, items) : true;
   const photoCount = p.images?.length ?? (p.imageUrl ? 1 : 0);
   const farmerHref = farmerSlug ? `/farmer/${farmerSlug}` : null;
   const isNew = isRecent(p.createdAt ?? null);
@@ -195,11 +202,33 @@ export function ProductCard({
         )}
       </div>
 
+      {isCompanionManaged && !companionOk && (
+        <div className="mt-2.5 rounded-lg bg-accent px-2.5 py-1.5 text-[12px] font-semibold text-accent-foreground">
+          {companionMin
+            ? `🧺 Промо цена — добавя се към поръчка с други продукти за поне ${eur(companionMin)}`
+            : `🧺 Промо цена — добавя се заедно с още поне един продукт`}
+        </div>
+      )}
+
       <div className="mt-3.5">
         {hasV ? (
           <Link href={href} className={cn(buttonVariants({ variant: "default" }), "h-11 w-full rounded-xl text-[15px] font-bold", soldOut && "opacity-50")}>
             {soldOut ? "Изчерпан" : "Избери вариант"}
           </Link>
+        ) : isCompanionManaged && !companionOk ? (
+          <Button
+            disabled
+            title={
+              companionMin
+                ? `„${p.name}“ се добавя само с други продукти на обща стойност поне ${eur(companionMin)}.`
+                : `„${p.name}“ се добавя само заедно с друг продукт.`
+            }
+            className="h-11 w-full rounded-xl text-[15px] font-bold"
+          >
+            {companionMin
+              ? `🔒 Още ${eurFromLv(companionShortfall(p.id, companionMin, items))} други продукти`
+              : `🔒 Добави с друг продукт`}
+          </Button>
         ) : (
           <Button
             onClick={onAdd}
