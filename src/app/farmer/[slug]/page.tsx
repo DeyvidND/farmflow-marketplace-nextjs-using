@@ -4,6 +4,7 @@ import { BadgeCheck } from "lucide-react";
 import { getCatalog } from "@/lib/api";
 import { farmerSlugMap } from "@/lib/farmer-slug";
 import { cfImage } from "@/lib/img";
+import { SITE_URL } from "@/lib/config";
 import { StoreShell } from "@/components/store-shell";
 import { ProductCard } from "@/components/product-card";
 import { BrandedFarmer } from "@/components/farmer/branded-farmer";
@@ -24,24 +25,41 @@ async function resolve(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const { farmer } = await resolve(slug);
-  return { title: farmer ? `${farmer.name} · Фермер` : "Фермер" };
+  if (!farmer) return { title: "Фермер" };
+  return {
+    title: `${farmer.name} · Фермер`,
+    description: farmer.bio?.trim() || `${farmer.name} — местно стопанство. Разгледай продуктите и поръчай директно от фермера.`,
+  };
 }
 
 export default async function FarmerPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const { boot, farmer } = await resolve(slug);
+  const { slug: rawSlug } = await params;
+  const { boot, farmer } = await resolve(rawSlug);
   if (!farmer || !boot.storefront.multiFarmer) notFound();
 
   const availMap = new Map((boot.availability ?? []).map((w) => [w.productId, w.remaining]));
   const best = new Set(boot.bestSellerIds ?? []);
   const products = boot.products.filter((p) => p.farmerId === farmer.id && p.isActive !== false);
   const img = farmer.images?.[0] ?? farmer.imageUrl ?? null;
+  const slug = farmerSlugMap(boot.farmers).get(farmer.id) ?? farmer.id;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: farmer.name,
+    description: farmer.bio?.trim() || undefined,
+    image: img ? [img] : undefined,
+    url: `${SITE_URL}/farmer/${slug}`,
+    address: farmer.city ? { "@type": "PostalAddress", addressLocality: farmer.city, addressCountry: "BG" } : undefined,
+    geo: farmer.lat != null && farmer.lng != null ? { "@type": "GeoCoordinates", latitude: farmer.lat, longitude: farmer.lng } : undefined,
+  };
 
   // Tier-2 „Бранд идентичност": paid, operator-unlocked → branded subpage (big portrait
   // + gallery + own color). Default farmers keep the compact layout below.
   if (farmer.branding?.enabled) {
     return (
       <StoreShell>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <div className="w-full py-6">
           <BrandedFarmer farmer={farmer} products={products} best={best} availMap={availMap} />
         </div>
@@ -51,6 +69,7 @@ export default async function FarmerPage({ params }: { params: Promise<{ slug: s
 
   return (
     <StoreShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6">
         {/* farmer header */}
         <div className="flex flex-wrap items-center gap-5 rounded-2xl border border-border bg-card p-6 sm:p-8">
