@@ -111,6 +111,10 @@ function createPopupOverlay(position: google.maps.LatLng, point: MapPoint, onClo
     onAdd() {
       this.el = buildPopupCard(point, onClose);
       this.getPanes()?.floatPane.appendChild(this.el);
+      // Popup DOM lives in floatPane, above the map — without this, any click on
+      // the card (other than the ×) bubbles to the map's own click handler and
+      // immediately self-closes the popup that click just opened.
+      google.maps.OverlayView.preventMapHitsAndGesturesFrom(this.el);
     }
 
     draw() {
@@ -206,7 +210,7 @@ export function FarmerMap({ points }: { points: MapPoint[] }) {
         map.addListener("click", closeActivePopup);
 
         if (!bounds.isEmpty()) {
-          map.fitBounds(bounds, { top: 210, right: 64, bottom: 64, left: 64 });
+          map.fitBounds(bounds, { top: POPUP_TOP_CLEARANCE, right: 64, bottom: 64, left: 64 });
         }
         google.maps.event.addListenerOnce(map, "idle", () => {
           const zoom = map.getZoom();
