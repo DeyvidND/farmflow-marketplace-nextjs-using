@@ -83,6 +83,8 @@ export default async function FarmerPage({ params }: { params: Promise<{ slug: s
               <ProductCard
                 key={p.id}
                 product={p}
+                farmerId={farmer.id}
+                farmerName={farmer.name}
                 bestSeller={best.has(p.id)}
                 remaining={availMap.has(p.id) ? availMap.get(p.id) ?? null : null}
               />

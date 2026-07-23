@@ -22,12 +22,14 @@ function initials(name: string) {
 
 export function ProductDetail({
   product: p,
+  farmerId,
   farmerName,
   farmerSlug,
   farmerImage,
   remaining,
 }: {
   product: Product;
+  farmerId: string | null;
   farmerName: string | null;
   farmerSlug: string | null;
   farmerImage: string | null;
@@ -57,7 +59,7 @@ export function ProductDetail({
         name: label,
         price: priceStotinki / 100,
         weight: p.weight,
-        farmerId: p.farmerId ?? undefined,
+        farmerId: farmerId ?? undefined,
         farmerName: farmerName ?? undefined,
         requiresCompanion: p.requiresCompanion,
         companionMinStotinki: p.companionMinPriceStotinki,

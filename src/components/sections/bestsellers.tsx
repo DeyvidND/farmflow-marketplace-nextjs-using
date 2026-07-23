@@ -69,6 +69,7 @@ export function Bestsellers({
                 <ProductCard
                   key={c.product.id}
                   product={c.product}
+                  farmerId={c.farmerId}
                   farmerName={c.farmerName}
                   farmerSlug={c.farmerSlug}
                   farmerImage={c.farmerImage}

@@ -22,6 +22,7 @@ function initials(name: string) {
 
 export function ProductCard({
   product: p,
+  farmerId = null,
   farmerName = null,
   farmerSlug = null,
   farmerImage = null,
@@ -30,6 +31,7 @@ export function ProductCard({
   className,
 }: {
   product: Product;
+  farmerId?: string | null;
   farmerName?: string | null;
   farmerSlug?: string | null;
   farmerImage?: string | null;
@@ -55,7 +57,7 @@ export function ProductCard({
       name: p.name,
       price: pd.headlineStotinki / 100,
       weight: p.weight,
-      farmerId: p.farmerId ?? undefined,
+      farmerId: farmerId ?? undefined,
       farmerName: farmerName ?? undefined,
       requiresCompanion: p.requiresCompanion,
       companionMinStotinki: p.companionMinPriceStotinki,

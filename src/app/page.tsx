@@ -374,6 +374,7 @@ export default async function Home() {
                   <div key={p.id} className="w-[240px] shrink-0">
                     <ProductCard
                       product={p}
+                      farmerId={showFarmers && p.farmerId ? p.farmerId : null}
                       farmerName={showFarmers ? farmerName(p.farmerId) : null}
                       farmerSlug={showFarmers && p.farmerId ? slugs.get(p.farmerId) ?? null : null}
                       farmerImage={showFarmers ? farmerImg(p.farmerId) : null}
