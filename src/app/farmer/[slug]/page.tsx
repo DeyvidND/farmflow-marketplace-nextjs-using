@@ -6,6 +6,7 @@ import { farmerSlugMap } from "@/lib/farmer-slug";
 import { cfImage } from "@/lib/img";
 import { legalIdLine } from "@/lib/legal";
 import { SITE_URL } from "@/lib/config";
+import { jsonLdScript } from "@/lib/json-ld";
 import { StoreShell } from "@/components/store-shell";
 import { ProductCard } from "@/components/product-card";
 import { BrandedFarmer } from "@/components/farmer/branded-farmer";
@@ -60,7 +61,7 @@ export default async function FarmerPage({ params }: { params: Promise<{ slug: s
   if (farmer.branding?.enabled) {
     return (
       <StoreShell>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
         <div className="w-full py-6">
           <BrandedFarmer farmer={farmer} products={products} best={best} availMap={availMap} />
         </div>
@@ -88,7 +89,12 @@ export default async function FarmerPage({ params }: { params: Promise<{ slug: s
             <div className="mt-1 text-[15px] text-muted-foreground">
               {[farmer.city, farmer.role, farmer.since ? `от ${farmer.since}` : null, `${products.length} продукта`].filter(Boolean).join(" · ")}
             </div>
-            {farmer.legal?.address && (
+            {/* legalIdLine() below already renders the address once legal.name is
+                set (same gate as the "Продавач" block) — showing it here too would
+                duplicate it. Only fall back to this line when there's no legal.name,
+                i.e. the legal-disclosure block won't render at all, so the address
+                would otherwise never appear anywhere on the page. */}
+            {farmer.legal?.address && !farmer.legal?.name && (
               <div className="mt-1 flex items-center gap-1.5 text-[13.5px] text-muted-foreground">
                 <MapPin className="size-3.5 shrink-0" /> {farmer.legal.address}
               </div>

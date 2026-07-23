@@ -24,5 +24,9 @@ export const ADMIN_LOGIN_URL = `${(process.env.NEXT_PUBLIC_ADMIN_URL ?? 'https:/
 export const ONLY_LOCAL_DELIVERY = true;
 
 /** Public origin of this storefront — used for absolute URLs in the sitemap,
- *  robots.txt sitemap pointer, and JSON-LD (canonical `url` fields). */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://farmmarket.bg').replace(/\/+$/, '');
+ *  robots.txt sitemap pointer, and JSON-LD (canonical `url` fields). Every real
+ *  deploy MUST set NEXT_PUBLIC_SITE_URL — the fallback below is a deliberately
+ *  invalid placeholder (NOT chaika's real farmmarket.bg domain) so a staging
+ *  deploy that forgets to set it advertises an obviously-wrong URL instead of
+ *  silently pointing crawlers/structured data at someone else's live site. */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://marketplace-next.local.invalid').replace(/\/+$/, '');

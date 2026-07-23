@@ -106,7 +106,12 @@ export function BrandedFarmer({
             <BadgeCheck className="size-5 shrink-0 text-primary sm:size-6" />
           </div>
           <div className="mt-1 text-[13.5px] font-medium text-muted-foreground sm:text-[14px]">{meta}</div>
-          {farmer.legal?.address && (
+          {/* legalIdLine() below already renders the address once legal.name is
+              set (same gate as the "Продавач" block) — showing it here too would
+              duplicate it. Only fall back to this line when there's no legal.name,
+              i.e. the legal-disclosure block won't render at all, so the address
+              would otherwise never appear anywhere on the page. */}
+          {farmer.legal?.address && !farmer.legal?.name && (
             <div className="mt-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
               <MapPin className="size-3.5 shrink-0" /> {farmer.legal.address}
             </div>

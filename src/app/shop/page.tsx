@@ -3,6 +3,7 @@ import { getCatalog } from "@/lib/api";
 import { categoriesFrom } from "@/lib/catalog";
 import { toCards } from "@/lib/cards";
 import { SITE_URL } from "@/lib/config";
+import { jsonLdScript } from "@/lib/json-ld";
 import { StoreShell } from "@/components/store-shell";
 import { ShopClient } from "@/components/shop/shop-client";
 
@@ -41,7 +42,7 @@ export default async function ShopPage({
 
   return (
     <StoreShell>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
       <ShopClient
         cards={cards}
         categories={cats.map((c) => ({ id: c.id, name: c.name }))}

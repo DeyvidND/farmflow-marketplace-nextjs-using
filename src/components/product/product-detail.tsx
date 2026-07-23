@@ -12,12 +12,12 @@ import { cfImage, cfSrcset } from "@/lib/img";
 import { coverCropStyle } from "@/lib/cover";
 import { isBundle, bundleMemberPhotos } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
-import { eur, bgn } from "@/lib/money";
+import { eur, bgn, eurFromLv } from "@/lib/money";
 import {
   priceDisplay, discountPercent, hasVariants, allVariantsSoldOut, variantPriceStotinki,
 } from "@/lib/pricing";
 import { legalIdLine } from "@/lib/legal";
-import { companionSatisfied } from "@/lib/companion";
+import { companionSatisfied, companionShortfall } from "@/lib/companion";
 import type { Product, FarmerLegal } from "@/lib/types";
 
 function initials(name: string) {
@@ -54,7 +54,8 @@ export function ProductDetail({
   // stays sane) — the buyer inspects the product here, cropping it is a sin.
   const [mainAspect, setMainAspect] = useState<number | null>(null);
   const [qty, setQty] = useState(1);
-  const variants = hasVariants(p) ? p.variants! : [];
+  const hasV = hasVariants(p);
+  const variants = hasV ? p.variants! : [];
   const [variantId, setVariantId] = useState<string | null>(variants[0]?.id ?? null);
   const selVariant = variants.find((v) => v.id === variantId) ?? null;
 
@@ -63,8 +64,13 @@ export function ProductDetail({
   const soldOut = (remaining !== null && remaining === 0) || allVariantsSoldOut(p);
   const priceStotinki = selVariant ? variantPriceStotinki(selVariant) : pd.headlineStotinki;
   const companionMin = p.companionMinPriceStotinki ?? null;
-  const showCompanionNotice =
-    !!p.requiresCompanion && !soldOut && !companionSatisfied(p.id, companionMin, items);
+  const companionOk = companionSatisfied(p.id, companionMin, items);
+  const showCompanionNotice = !!p.requiresCompanion && !soldOut && !companionOk;
+  // Loss-leader companion lock: mirrors product-card.tsx — never lock a
+  // sold-out button, and never lock when the product has variants (the
+  // variant picker above changes what "add" even means).
+  const isCompanionManaged = !!p.requiresCompanion && !soldOut && !hasV;
+  const companionLocked = isCompanionManaged && !companionOk;
 
   const onAdd = () => {
     const label = selVariant ? `${p.name} · ${selVariant.label}` : p.name;
@@ -288,8 +294,26 @@ export function ProductDetail({
                 <Plus className="size-[18px]" />
               </button>
             </div>
-            <Button onClick={onAdd} disabled={soldOut} className="h-12 flex-1 rounded-xl text-base font-bold">
-              <Plus className="size-[18px]" /> {soldOut ? "Изчерпан" : "Добави в количката"}
+            <Button
+              onClick={onAdd}
+              disabled={soldOut || companionLocked}
+              title={
+                companionLocked
+                  ? companionMin
+                    ? `„${p.name}“ се добавя само с други продукти на обща стойност поне ${eur(companionMin)}.`
+                    : `„${p.name}“ се добавя само заедно с друг продукт.`
+                  : undefined
+              }
+              className="h-12 flex-1 rounded-xl text-base font-bold"
+            >
+              {companionLocked ? null : <Plus className="size-[18px]" />}{" "}
+              {soldOut
+                ? "Изчерпан"
+                : companionLocked
+                  ? companionMin
+                    ? `🔒 Още ${eurFromLv(companionShortfall(p.id, companionMin, items))} други продукти`
+                    : `🔒 Добави с друг продукт`
+                  : "Добави в количката"}
             </Button>
           </div>
 

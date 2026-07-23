@@ -5,6 +5,7 @@ import { bundleMemberPhotos } from "@/lib/catalog";
 import { farmerSlugMap } from "@/lib/farmer-slug";
 import { priceDisplay, allVariantsSoldOut } from "@/lib/pricing";
 import { SITE_URL } from "@/lib/config";
+import { jsonLdScript } from "@/lib/json-ld";
 import { cfImage } from "@/lib/img";
 import { StoreShell } from "@/components/store-shell";
 import { ProductDetail } from "@/components/product/product-detail";
@@ -61,7 +62,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <StoreShell>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
       <ProductDetail
         product={p}
         farmerId={farmer?.id ?? null}
