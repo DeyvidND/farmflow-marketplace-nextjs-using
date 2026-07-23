@@ -50,7 +50,7 @@ export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: b
   // Homepage → in-page anchors; elsewhere → resolve against "/".
   const a = (id: string) => (onHome ? `#${id}` : `/#${id}`);
   const rail = [
-    ...(multiFarmer ? [{ label: "Фермери", href: onHome ? "#farmers" : "/farmers" }] : []),
+    ...(multiFarmer ? [{ label: "Фермери", href: onHome ? "#farmers" : "/farmers" }, { label: "Карта", href: "/karta" }] : []),
     { label: "Категории", href: a("categories") },
     { label: "Най-продавани", href: a("shop") },
     { label: "Ново", href: a("new") },
@@ -134,6 +134,9 @@ export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: b
                   {multiFarmer && (
                     <Link href="/farmers" className="rounded-lg px-3 py-3 text-[15px] font-semibold hover:bg-secondary" onClick={() => setOpen(false)}>Фермери</Link>
                   )}
+                  {multiFarmer && (
+                    <Link href="/karta" className="rounded-lg px-3 py-3 text-[15px] font-semibold hover:bg-secondary" onClick={() => setOpen(false)}>Карта</Link>
+                  )}
                   {PAGES.map((p) => (
                     <Link key={p.href} href={p.href} className="rounded-lg px-3 py-3 text-[15px] font-semibold hover:bg-secondary" onClick={() => setOpen(false)}>{p.label}</Link>
                   ))}
@@ -165,7 +168,7 @@ export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: b
             </span>
           ))}
           <span className="mx-4 h-4 w-px shrink-0 bg-line-strong xl:mx-6" />
-          {[...(multiFarmer ? [{ label: "Фермери", href: "/farmers" }] : []), ...PAGES].map((l) => (
+          {[...(multiFarmer ? [{ label: "Фермери", href: "/farmers" }, { label: "Карта", href: "/karta" }] : []), ...PAGES].map((l) => (
             <Link key={l.href} href={l.href} className="mr-4 whitespace-nowrap text-[14.5px] font-semibold text-muted-foreground hover:text-primary xl:mr-5">
               {l.label}
             </Link>
