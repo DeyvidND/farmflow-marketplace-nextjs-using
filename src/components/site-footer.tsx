@@ -60,8 +60,8 @@ export function SiteFooter({ storefront }: { storefront: Storefront }) {
 
 function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground/80">{title}</div>
+    <div className="flex flex-col gap-1">
+      <div className="mb-1.5 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground/80">{title}</div>
       {children}
     </div>
   );
@@ -69,7 +69,9 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="text-[13.5px] text-muted-foreground hover:text-primary">
+    // py-2 lifts the tap target toward 44px for the older part of the audience —
+    // the visual rhythm is kept by the tighter column gap above.
+    <Link href={href} className="py-2 text-[13.5px] text-muted-foreground hover:text-primary">
       {children}
     </Link>
   );

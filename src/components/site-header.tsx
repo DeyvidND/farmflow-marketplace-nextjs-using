@@ -158,18 +158,19 @@ export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: b
         </div>
 
         {/* discovery rail */}
-        <nav aria-label="Разгледай" className="no-scrollbar mt-3 flex items-center gap-0 overflow-x-auto border-t border-border py-3 max-lg:hidden">
+        {/* py-2 on links (not just the bar) keeps every nav item a ~40px target. */}
+        <nav aria-label="Разгледай" className="no-scrollbar mt-3 flex items-center gap-0 overflow-x-auto border-t border-border py-1 max-lg:hidden">
           {rail.map((l, i) => (
             <span key={l.href} className="flex items-center">
               {i > 0 && <span className="mx-3 text-line-strong xl:mx-4.5">·</span>}
-              <Link href={l.href} className="whitespace-nowrap text-[14.5px] font-semibold text-foreground/75 hover:text-primary">
+              <Link href={l.href} className="whitespace-nowrap py-2 text-[14.5px] font-semibold text-foreground/75 hover:text-primary">
                 {l.label}
               </Link>
             </span>
           ))}
           <span className="mx-4 h-4 w-px shrink-0 bg-line-strong xl:mx-6" />
           {[...(multiFarmer ? [{ label: "Фермери", href: "/farmers" }, { label: "Карта", href: "/karta" }] : []), ...PAGES].map((l) => (
-            <Link key={l.href} href={l.href} className="mr-4 whitespace-nowrap text-[14.5px] font-semibold text-muted-foreground hover:text-primary xl:mr-5">
+            <Link key={l.href} href={l.href} className="mr-4 whitespace-nowrap py-2 text-[14.5px] font-semibold text-muted-foreground hover:text-primary xl:mr-5">
               {l.label}
             </Link>
           ))}

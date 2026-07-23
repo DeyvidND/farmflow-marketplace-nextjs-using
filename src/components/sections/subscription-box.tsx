@@ -70,7 +70,7 @@ export function SubscriptionBox() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="име@example.com"
-                  className="h-12 flex-1 rounded-xl border-line-strong bg-white text-base text-foreground"
+                  className="h-12 flex-1 rounded-xl border-line-strong bg-card text-base text-foreground"
                 />
                 <Button type="submit" disabled={busy} className="h-12 rounded-xl font-bold">
                   Абонирай се
