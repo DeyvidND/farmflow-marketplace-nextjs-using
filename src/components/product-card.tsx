@@ -11,7 +11,7 @@ import { useCart } from "@/components/cart/cart-provider";
 import { CfImg } from "@/components/cf-img";
 import { cfImage } from "@/lib/img";
 import { coverCropStyle, shapeAspect } from "@/lib/cover";
-import { isRecent } from "@/lib/catalog";
+import { isRecent, isBundle } from "@/lib/catalog";
 import { eur, bgn } from "@/lib/money";
 import { priceDisplay, discountPercent, hasVariants, allVariantsSoldOut } from "@/lib/pricing";
 import type { Product } from "@/lib/types";
@@ -50,6 +50,15 @@ export function ProductCard({
   const farmerHref = farmerSlug ? `/farmer/${farmerSlug}` : null;
   const isNew = isRecent(p.createdAt ?? null);
   const tag = p.featured ? "Хит" : pd.compareStotinki != null ? "Промо" : null;
+  const bundle = isBundle(p);
+  // A basket with no cover photo of its own is drawn as a grid of its members'
+  // photos — up to four, in the order the operator arranged them. An uploaded
+  // cover always wins.
+  const memberPhotos = (p.bundleProducts ?? [])
+    .map((b) => b.image)
+    .filter((s): s is string => !!s)
+    .slice(0, 4);
+  const showTiles = bundle && !p.imageUrl && memberPhotos.length >= 2;
 
   const onAdd = () => {
     add({
@@ -94,10 +103,19 @@ export function ProductCard({
         className="relative block overflow-hidden rounded-xl bg-secondary"
         style={{ aspectRatio: shapeAspect(p.coverCrop) }}
       >
-        {tag && (
-          <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-honey px-2.5 py-1 text-[11px] font-bold text-[#2a2110]">
-            {tag}
-          </span>
+        {(tag || bundle) && (
+          <div className="absolute left-2.5 top-2.5 z-10 flex flex-col items-start gap-1.5">
+            {tag && (
+              <span className="rounded-full bg-honey px-2.5 py-1 text-[11px] font-bold text-[#2a2110]">
+                {tag}
+              </span>
+            )}
+            {bundle && (
+              <span className="rounded-full bg-forest-dark px-2.5 py-1 text-[11px] font-bold text-primary-foreground">
+                🧺 Кошница
+              </span>
+            )}
+          </div>
         )}
         {bestSeller && (
           <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-honey px-2.5 py-1 text-[11px] font-extrabold text-[#2a2110]">
@@ -109,7 +127,27 @@ export function ProductCard({
             Ново
           </span>
         )}
-        {p.imageUrl ? (
+        {showTiles ? (
+          <div
+            className={cn(
+              "absolute inset-0 grid grid-cols-2 gap-0.5",
+              memberPhotos.length > 2 ? "grid-rows-2" : "grid-rows-1",
+            )}
+          >
+            {memberPhotos.map((src, i) => (
+              <CfImg
+                key={src + i}
+                src={src}
+                width={360}
+                alt={i === 0 ? p.name : ""}
+                className={cn(
+                  "size-full object-cover",
+                  memberPhotos.length === 3 && i === 0 && "row-span-2",
+                )}
+              />
+            ))}
+          </div>
+        ) : p.imageUrl ? (
           <CfImg
             src={p.imageUrl}
             width={640}

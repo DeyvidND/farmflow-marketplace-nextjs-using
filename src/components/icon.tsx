@@ -1,5 +1,5 @@
 import {
-  Apple, Milk, Beef, Droplet, Cookie, Nut, Sprout, Cherry, Leaf, Store, Egg, Candy,
+  Apple, Milk, Beef, Droplet, Cookie, Nut, Sprout, Cherry, Leaf, Store, Egg, Candy, ShoppingBasket,
   type LucideIcon,
 } from "lucide-react";
 
@@ -18,6 +18,7 @@ const MAP: Record<string, LucideIcon> = {
   store: Store,
   egg: Egg,
   candy: Candy,
+  basket: ShoppingBasket,
 };
 
 export function CatIcon({ name, className }: { name: string; className?: string }) {
