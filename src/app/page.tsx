@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  Truck, ArrowRight, BadgeCheck, Store, Receipt, ShoppingBasket, HandCoins, Sprout, MapPin,
+  Truck, ArrowRight, BadgeCheck, Store, Receipt, HandCoins, Sprout, MapPin,
 } from "lucide-react";
 import { getCatalog } from "@/lib/api";
 import { categoriesFrom, catIdOf, recent, sortByTier } from "@/lib/catalog";
@@ -159,16 +159,16 @@ export default async function Home() {
 
       <main>
         {/* HERO */}
-        <section className="mx-auto flex w-full max-w-[1180px] flex-wrap items-center gap-x-14 gap-y-8 px-4 py-12 sm:px-6 lg:py-16">
+        <section className="mx-auto flex w-full max-w-[1180px] flex-wrap items-center gap-x-14 gap-y-8 px-4 py-8 sm:px-6 lg:py-10">
           <div className="min-w-[300px] max-w-[600px] flex-1">
             <Eyebrow>Местен фермерски пазар</Eyebrow>
-            <h1 className="mt-4 font-heading text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-[4rem]">
+            <h1 className="mt-4 font-heading text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
               Пазарувай директно от местни фермери
             </h1>
-            <p className="mt-5 max-w-[470px] text-[17px] leading-relaxed text-foreground/80">
+            <p className="mt-4 max-w-[470px] text-[17px] leading-relaxed text-foreground/80">
               Прясна храна с име и лице зад нея. Купувай директно от фермера — без посредник, без излишни ръце по пътя до твоята маса.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link href="#shop" className={cn(buttonVariants(), "h-13 rounded-xl px-6 text-[15.5px] font-bold")}>
                 Разгледай пазара <ArrowRight className="size-[18px]" />
               </Link>
@@ -177,7 +177,7 @@ export default async function Home() {
               </Link>
             </div>
             {stats.length >= 2 && (
-              <div className="mt-9 flex flex-wrap gap-x-11 gap-y-5 border-t border-border pt-6">
+              <div className="mt-7 flex flex-wrap gap-x-11 gap-y-5 border-t border-border pt-5">
                 {stats.map((s) => (
                   <div key={s.l}>
                     <div className="font-heading text-3xl font-semibold leading-none text-forest-dark">{s.n}</div>
@@ -192,6 +192,41 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* CATEGORIES — first thing after the hero: shopping is one click away */}
+        {cats.length > 0 && (
+          <section id="categories" className="scroll-mt-32">
+            <div className="mx-auto w-full max-w-[1180px] px-4 py-10 sm:px-6">
+              <div className="mb-6 flex flex-wrap items-end justify-between gap-3.5">
+                <div>
+                  <Eyebrow>Разгледай по вид</Eyebrow>
+                  <H2>Категории</H2>
+                </div>
+                <SeeAll href="/shop">Виж целия магазин</SeeAll>
+              </div>
+              <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
+                {cats.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/shop#${encodeURIComponent(c.id)}`}
+                    className="flex min-h-[138px] flex-col justify-between gap-4 rounded-2xl border border-black/5 bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(0,0,0,0.06)]"
+                  >
+                    <CatIcon name={c.icon} className="size-[30px] text-primary" />
+                    <div>
+                      <div className="text-[15.5px] font-bold">{c.name}</div>
+                      <div className="mt-1 text-[12.5px] text-muted-foreground">
+                        {c.count > 0 ? `${c.count} ${c.count === 1 ? "продукт" : "продукта"}` : "скоро"}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* BESTSELLERS (client — chip filter) */}
+        <Bestsellers cards={cards} categories={cats.map((c) => ({ id: c.id, name: c.name }))} />
+
         {/* FARMERS */}
         {showFarmers && farmers.length > 0 && (
           <section id="farmers" className="scroll-mt-32">
@@ -205,7 +240,7 @@ export default async function Home() {
                 <SeeAll href="/farmers">Виж всички фермери</SeeAll>
               </div>
               <div className="no-scrollbar flex gap-4 overflow-x-auto pb-3.5">
-                {rankedFarmers.slice(0, 12).map((f) => {
+                {rankedFarmers.slice(0, 8).map((f) => {
                   const [bg, fg] = avatarOf(f.id);
                   const img = f.images?.[0] ?? f.imageUrl ?? null;
                   const n = productCount(f.id);
@@ -316,41 +351,6 @@ export default async function Home() {
           </section>
         )}
 
-        {/* CATEGORIES */}
-        {cats.length > 0 && (
-          <section id="categories" className="scroll-mt-32">
-            <div className="mx-auto w-full max-w-[1180px] px-4 py-10 sm:px-6">
-              <div className="mb-6 flex flex-wrap items-end justify-between gap-3.5">
-                <div>
-                  <Eyebrow>Разгледай по вид</Eyebrow>
-                  <H2>Категории</H2>
-                </div>
-                <SeeAll href="/shop">Виж целия магазин</SeeAll>
-              </div>
-              <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
-                {cats.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/shop#${encodeURIComponent(c.id)}`}
-                    className="flex min-h-[138px] flex-col justify-between gap-4 rounded-2xl border border-black/5 bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(0,0,0,0.06)]"
-                  >
-                    <CatIcon name={c.icon} className="size-[30px] text-primary" />
-                    <div>
-                      <div className="text-[15.5px] font-bold">{c.name}</div>
-                      <div className="mt-1 text-[12.5px] text-muted-foreground">
-                        {c.count > 0 ? `${c.count} ${c.count === 1 ? "продукт" : "продукта"}` : "скоро"}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* BESTSELLERS (client — chip filter) */}
-        <Bestsellers cards={cards} categories={cats.map((c) => ({ id: c.id, name: c.name }))} />
-
         {/* NEW THIS WEEK */}
         {newProducts.length > 0 && (
           <section id="new" className="scroll-mt-32">
@@ -396,42 +396,26 @@ export default async function Home() {
         {/* SUBSCRIPTION (client) */}
         <SubscriptionBox />
 
-        {/* HOW IT WORKS */}
+        {/* HOW IT WORKS — thin strip; the full 3-step walkthrough lives on /orders */}
         <section id="how" className="scroll-mt-32 border-y border-[#e1e8d8] bg-secondary">
-          <div className="mx-auto w-full max-w-[1180px] px-4 py-14 sm:px-6">
-            <div className="max-w-[640px]">
-              <Eyebrow>Просто и прозрачно</Eyebrow>
-              <H2>Как работи</H2>
-            </div>
-            <div className="mt-8 grid gap-5 sm:grid-cols-3">
+          <div className="mx-auto flex w-full max-w-[1180px] flex-wrap items-center justify-between gap-x-8 gap-y-4 px-4 py-7 sm:px-6">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
               {[
-                { ic: Store, n: "01", t: "Избери фермер и продукти", d: "Разгледай магазините на местните фермери и напълни кошницата с това, което ти харесва." },
-                { ic: Receipt, n: "02", t: "Плащаш веднъж за цялата кошница", d: "Една поръчка, едно плащане — дори когато продуктите са от няколко различни фермера." },
-                { ic: Truck, n: "03", t: "Доставяме или взимаш от място", d: "Локална доставка до врата или вземане директно от фермера — ти избираш." },
+                { ic: Store, t: "Избери фермер и продукти" },
+                { ic: Receipt, t: "Плащаш веднъж за цялата кошница" },
+                { ic: Truck, t: "Доставяме или взимаш от място" },
               ].map((s) => (
-                <div key={s.n} className="rounded-2xl border border-border bg-card p-6">
-                  <div className="flex items-center justify-between">
-                    <span className="flex size-12 items-center justify-center rounded-[13px] bg-primary text-primary-foreground">
-                      <s.ic className="size-[22px]" />
-                    </span>
-                    <span className="font-heading text-4xl font-semibold text-[#CBD6BB]">{s.n}</span>
-                  </div>
-                  <h3 className="mt-5 text-[17.5px] font-extrabold leading-tight">{s.t}</h3>
-                  <p className="mt-2 text-[14.5px] leading-relaxed text-foreground/80">{s.d}</p>
+                <div key={s.t} className="flex items-center gap-2.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground">
+                    <s.ic className="size-[17px]" />
+                  </span>
+                  <span className="text-[14.5px] font-bold">{s.t}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl bg-primary px-6 py-6 text-[#eef2e7]">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
-                <ShoppingBasket className="size-6 text-[#fbf8f0]" />
-              </span>
-              <div className="min-w-[220px] flex-1">
-                <div className="font-heading text-lg font-semibold">Една кошница, много фермери</div>
-                <div className="mt-1 text-[14.5px] leading-relaxed text-[#c9d6be]">
-                  Комбинирай продукти от различни стопанства в една поръчка и едно плащане.
-                </div>
-              </div>
-            </div>
+            <Link href="/orders" className="inline-flex items-center gap-1.5 text-[14px] font-bold text-primary">
+              Виж как работи <ArrowRight className="size-4" />
+            </Link>
           </div>
         </section>
 
