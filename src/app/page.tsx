@@ -10,6 +10,7 @@ import { cfImage } from "@/lib/img";
 import { SmartCollage } from "@/components/smart-collage";
 import { SmartCover } from "@/components/smart-cover";
 import { eur, bgn } from "@/lib/money";
+import { priceDisplay } from "@/lib/pricing";
 import type { Farmer } from "@/lib/types";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -157,6 +158,15 @@ export default async function Home() {
     : null;
   const fowNote = boot.farmerOfWeek?.note ?? null;
 
+  // Product of the week only earns its own section when it still resolves to
+  // a live, active product — a paused/deleted pick silently falls back to
+  // nothing rather than showing a dead link.
+  const potwCard = potw && potw.isActive !== false ? potw : null;
+  const potwNote = boot.productOfWeek?.note ?? null;
+  const potwPrice = potwCard ? priceDisplay(potwCard) : null;
+  const potwFarmerName = potwCard && showFarmers ? farmerName(potwCard.farmerId) : null;
+  const potwFarmerSlug = potwCard?.farmerId ? slugs.get(potwCard.farmerId) ?? null : null;
+
   const freeThreshold = sf.delivery?.freeThresholdStotinki ?? 0;
 
   // Illustrative "what's in the basket" preview for the subscription box —
@@ -227,6 +237,50 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* PILLARS — the two ways to get the food: pickup vs delivery */}
+        <section className="mx-auto w-full max-w-[1180px] px-4 pb-10 sm:px-6">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-[11px] bg-secondary">
+                <Store className="size-5 text-primary" />
+              </span>
+              <h3 className="mt-4 font-heading text-lg font-semibold">Вземане от пазара</h3>
+              <p className="mt-1.5 text-[14.5px] text-muted-foreground">Директно от фермера — без такса</p>
+              {(sf.contact?.address || sf.contact?.hours) && (
+                <div className="mt-4 space-y-1.5 border-t border-border pt-4 text-[13.5px] text-foreground/80">
+                  {sf.contact?.address && (
+                    <div className="flex items-start gap-1.5">
+                      <MapPin className="mt-0.5 size-[15px] shrink-0 text-muted-foreground" />
+                      <span>{sf.contact.address}</span>
+                    </div>
+                  )}
+                  {sf.contact?.hours && <div>{sf.contact.hours}</div>}
+                </div>
+              )}
+              {showFarmers && (
+                <Link href="/karta" className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-bold text-primary">
+                  Виж на картата <ArrowRight className="size-4" />
+                </Link>
+              )}
+            </div>
+            {sf.deliveryEnabled && (
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-[11px] bg-secondary">
+                  <Truck className="size-5 text-primary" />
+                </span>
+                <h3 className="mt-4 font-heading text-lg font-semibold">Доставка до адрес</h3>
+                <div className="mt-1.5 space-y-1 text-[14.5px] text-muted-foreground">
+                  <div>Такса {eur(sf.delivery.addressFeeStotinki)}</div>
+                  {freeThreshold > 0 && <div>Безплатна над {eur(freeThreshold)}</div>}
+                </div>
+                <Link href="/orders" className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-bold text-primary">
+                  Как работи <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* CATEGORIES — first thing after the hero: shopping is one click away */}
         {cats.length > 0 && (
           <section id="categories" className="scroll-mt-32">
@@ -280,6 +334,59 @@ export default async function Home() {
 
         {/* BESTSELLERS (client — chip filter) */}
         <Bestsellers cards={cards} categories={cats.map((c) => ({ id: c.id, name: c.name }))} />
+
+        {/* PRODUCT OF THE WEEK */}
+        {potwCard && potwPrice && (
+          <section className="mx-auto w-full max-w-[1180px] px-4 pb-2 sm:px-6">
+            <div className="flex flex-wrap overflow-hidden rounded-[22px] border border-border bg-card">
+              <div className="relative flex min-h-[240px] flex-1 basis-[300px] items-center justify-center bg-[linear-gradient(150deg,#F8EECF,#E9D399)]">
+                {(() => {
+                  const imgs = potwCard.images?.length
+                    ? potwCard.images
+                    : potwCard.imageUrl
+                      ? [potwCard.imageUrl]
+                      : [];
+                  return imgs.length ? (
+                    <SmartCover
+                      images={imgs}
+                      width={700}
+                      sizes="(min-width:640px) 50vw, 92vw"
+                      alt={potwCard.name}
+                      className="absolute inset-0 size-full object-cover"
+                    />
+                  ) : (
+                    <CatIcon name="cherry" className="size-16 text-[#4C7A3F]/50" />
+                  );
+                })()}
+                <span className="absolute left-4 top-4 rounded-full bg-honey px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-wider text-[#2a2110]">
+                  Продукт на седмицата
+                </span>
+              </div>
+              <div className="flex flex-1 basis-[360px] flex-col justify-center p-7 sm:p-10">
+                <Eyebrow fresh>Продукт на седмицата</Eyebrow>
+                <h3 className="mt-2 font-heading text-2xl font-semibold">{potwCard.name}</h3>
+                {potwNote && (
+                  <p className="mt-3 font-heading text-lg italic leading-relaxed text-foreground/85">„{potwNote}“</p>
+                )}
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="font-heading text-2xl font-bold text-forest-dark">{eur(potwPrice.headlineStotinki)}</span>
+                  <span className="text-[13px] text-muted-foreground">{bgn(potwPrice.headlineStotinki)}</span>
+                </div>
+                {potwFarmerName && (
+                  <Link href={potwFarmerSlug ? `/farmer/${potwFarmerSlug}` : "/farmers"} className="mt-2 text-[13.5px] font-bold text-primary">
+                    {potwFarmerName}
+                  </Link>
+                )}
+                <Link
+                  href={potwCard.slug ? `/product/${potwCard.slug}` : "/shop"}
+                  className={cn(buttonVariants(), "mt-6 h-11 w-fit rounded-xl font-bold")}
+                >
+                  Виж продукта <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* FARMERS */}
         {showFarmers && farmers.length > 0 && (

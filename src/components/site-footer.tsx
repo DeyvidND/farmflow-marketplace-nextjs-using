@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Sprout, Phone, Mail } from "lucide-react";
 import type { Storefront } from "@/lib/types";
+import { ADMIN_LOGIN_URL } from "@/lib/config";
 
 export function SiteFooter({ storefront }: { storefront: Storefront }) {
   const phone = storefront.contact?.phone ?? storefront.phone;
@@ -33,6 +34,7 @@ export function SiteFooter({ storefront }: { storefront: Storefront }) {
               <FooterLink href="/about">Кои сме</FooterLink>
               <FooterLink href="/articles">Статии</FooterLink>
               <FooterLink href="/reviews">Отзиви</FooterLink>
+              <FooterLink href="/faq">Чести въпроси</FooterLink>
               <FooterLink href="/contact">Контакти</FooterLink>
             </FooterCol>
             <FooterCol title="Свържи се">
@@ -46,12 +48,21 @@ export function SiteFooter({ storefront }: { storefront: Storefront }) {
                   <Mail className="size-3.5" /> {email}
                 </a>
               )}
+              <a
+                href={ADMIN_LOGIN_URL}
+                target="_blank"
+                rel="noopener"
+                className="py-2 text-[12.5px] text-muted-foreground/70 hover:text-muted-foreground"
+              >
+                Вход за стопани
+              </a>
             </FooterCol>
           </div>
         </div>
         <div className="mt-8 flex flex-wrap items-center justify-end gap-4 border-t border-line-strong pt-5 text-[12.5px] text-muted-foreground">
           <Link href="/terms">Общи условия</Link>
           <Link href="/privacy">Поверителност</Link>
+          <Link href="/cookies">Бисквитки</Link>
         </div>
       </div>
     </footer>
