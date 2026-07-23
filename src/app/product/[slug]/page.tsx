@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCatalog } from "@/lib/api";
+import { bundleMemberPhotos } from "@/lib/catalog";
 import { farmerSlugMap } from "@/lib/farmer-slug";
 import { priceDisplay, allVariantsSoldOut } from "@/lib/pricing";
 import { SITE_URL } from "@/lib/config";
+import { cfImage } from "@/lib/img";
 import { StoreShell } from "@/components/store-shell";
 import { ProductDetail } from "@/components/product/product-detail";
 
@@ -12,9 +14,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { products } = await getCatalog();
   const p = products.find((x) => x.slug === slug);
   if (!p) return { title: "Продукт" };
+
+  // A кошница with no cover photo of its own falls back to its first member's
+  // photo for the social preview — a grid of tiles isn't a valid og:image.
+  const bundleImages = bundleMemberPhotos(p);
+  const productImages = p.images?.length ? p.images : p.imageUrl ? [p.imageUrl] : bundleImages;
+  const ogImage = productImages[0] ? cfImage(productImages[0], 1200) : undefined;
+
   return {
     title: `${p.name} · Фермерски пазари`,
     description: p.description?.trim() || `${p.name} — поръчай директно от фермера, прясно и без посредник.`,
+    openGraph: ogImage ? { images: [{ url: ogImage }] } : undefined,
   };
 }
 

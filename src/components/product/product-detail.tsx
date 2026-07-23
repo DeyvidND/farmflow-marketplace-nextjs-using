@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, Plus, Minus, ArrowLeft } from "lucide-react";
+import { BadgeCheck, Plus, Minus, ArrowLeft, Leaf, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,6 +10,8 @@ import { useCart } from "@/components/cart/cart-provider";
 import { CfImg } from "@/components/cf-img";
 import { cfImage, cfSrcset } from "@/lib/img";
 import { coverCropStyle } from "@/lib/cover";
+import { isBundle, bundleMemberPhotos } from "@/lib/catalog";
+import { cn } from "@/lib/utils";
 import { eur, bgn } from "@/lib/money";
 import {
   priceDisplay, discountPercent, hasVariants, allVariantsSoldOut, variantPriceStotinki,
@@ -41,6 +43,12 @@ export function ProductDetail({
   const { add } = useCart();
   const gallery = p.images?.length ? p.images : p.imageUrl ? [p.imageUrl] : [];
   const [main, setMain] = useState(gallery[0] ?? null);
+  const bundle = isBundle(p);
+  // A basket with no cover photo of its own is drawn as a grid of its members'
+  // photos — up to four, in the order the operator arranged them. An uploaded
+  // cover always wins.
+  const memberPhotos = bundleMemberPhotos(p, 4);
+  const showTiles = bundle && !p.imageUrl && memberPhotos.length >= 2;
   // The main frame adapts to the photo's own proportions (clamped so the layout
   // stays sane) — the buyer inspects the product here, cropping it is a sin.
   const [mainAspect, setMainAspect] = useState<number | null>(null);
@@ -82,9 +90,29 @@ export function ProductDetail({
         <div>
           <div
             className="relative overflow-hidden rounded-2xl border border-border bg-secondary"
-            style={{ aspectRatio: mainAspect ?? 1 }}
+            style={{ aspectRatio: showTiles ? 1 : mainAspect ?? 1 }}
           >
-            {main ? (
+            {showTiles ? (
+              <div
+                className={cn(
+                  "grid size-full grid-cols-2 gap-1",
+                  memberPhotos.length > 2 ? "grid-rows-2" : "grid-rows-1",
+                )}
+              >
+                {memberPhotos.map((src, i) => (
+                  <CfImg
+                    key={src + i}
+                    src={src}
+                    width={600}
+                    alt={i === 0 ? p.name : ""}
+                    className={cn(
+                      "size-full object-cover",
+                      memberPhotos.length === 3 && i === 0 && "row-span-2",
+                    )}
+                  />
+                ))}
+              </div>
+            ) : main ? (
               // Frame follows the photo (clamped 3:4…4:3) → little to no crop; the
               // farmer's focal point covers whatever clamping still trims.
               // eslint-disable-next-line @next/next/no-img-element
@@ -115,7 +143,7 @@ export function ProductDetail({
               <span className="flex size-full items-center justify-center p-8 text-center text-muted-foreground">{p.name}</span>
             )}
           </div>
-          {gallery.length > 1 && (
+          {!showTiles && gallery.length > 1 && (
             <div className="mt-3 flex gap-2.5">
               {gallery.slice(0, 5).map((g) => (
                 <button
@@ -155,6 +183,58 @@ export function ProductDetail({
               <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-white">-{discount}%</span>
             )}
           </div>
+
+          {/* Legacy curated free-text content lines — informational only, not
+              tied to `bundleProducts`. */}
+          {p.bundleItems && p.bundleItems.length > 0 && (
+            <ul className="mt-6 flex flex-col gap-2">
+              {p.bundleItems.map((it) => (
+                <li key={it} className="flex items-start gap-2 text-[15px] text-foreground/85">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <span>{it}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {p.bundleProducts && p.bundleProducts.length > 0 && (
+            <div className="mt-6 rounded-2xl border border-border bg-card p-4">
+              <div className="mb-2.5 text-[11.5px] font-bold uppercase tracking-wide text-muted-foreground">
+                🧺 Тази кошница съдържа
+              </div>
+              <ul className="flex flex-col gap-2.5">
+                {p.bundleProducts.map((m) => (
+                  <li key={m.productId} className="flex items-center gap-3">
+                    {m.image ? (
+                      <CfImg
+                        src={m.image}
+                        width={96}
+                        alt={m.name}
+                        className="size-11 shrink-0 rounded-[10px] object-cover"
+                      />
+                    ) : (
+                      <span className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-secondary">
+                        <Leaf className="size-4 text-muted-foreground" />
+                      </span>
+                    )}
+                    <span className="flex-1 font-semibold">
+                      {m.slug ? (
+                        <Link href={`/product/${m.slug}`} className="hover:underline">
+                          {m.name}
+                        </Link>
+                      ) : (
+                        m.name
+                      )}
+                    </span>
+                    <span className="whitespace-nowrap text-sm text-muted-foreground">× {m.quantity}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-[12.5px] text-muted-foreground">
+                Кошницата се купува като едно цяло на обявената цена.
+              </p>
+            </div>
+          )}
 
           {variants.length > 0 && (
             <div className="mt-5">

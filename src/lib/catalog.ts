@@ -11,12 +11,30 @@ export interface Category {
   count: number;
 }
 
-const BUNDLE_LABEL = 'Сезонни пакети';
+export const BUNDLE_LABEL = 'Кошници';
+const BUNDLE_DESC = 'Готови кошници с продукти от няколко фермери, на обща цена.';
 const catLabel = (raw: string) => (raw === 'bundle' ? BUNDLE_LABEL : raw);
+
+/** True for a готова кошница — identified purely by `category === 'bundle'`.
+ *  There is no `bundleParentId`; membership arrives inline via `bundleProducts`. */
+export function isBundle(p: Pick<Product, 'category'>): boolean {
+  return p.category === 'bundle';
+}
+
+/** A basket's cover-fallback photos: its members' images, in the order the
+ *  operator arranged them, capped at `max`. Used both for the 2×2 member-photo
+ *  tile grid (cards/PDP) and the og:image fallback (no cap needed there). */
+export function bundleMemberPhotos(p: Pick<Product, 'bundleProducts'>, max = Infinity): string[] {
+  return (p.bundleProducts ?? [])
+    .map((b) => b.image)
+    .filter((s): s is string => !!s)
+    .slice(0, max);
+}
 
 /** Best-effort lucide icon by category name. */
 export function iconForCategory(name: string | null | undefined): string {
   const n = (name || '').toLowerCase();
+  if (/кошниц|пакет|basket/.test(n)) return 'basket';
   if (/плод|зелен|fruit|produce|овощ/.test(n)) return 'apple';
   if (/млеч|сирен|dairy|мляко/.test(n)) return 'milk';
   if (/мед|honey|пчел/.test(n)) return 'droplet';
@@ -26,21 +44,42 @@ export function iconForCategory(name: string | null | undefined): string {
   return 'sprout';
 }
 
+/** The grouping key for a product under the active taxonomy. A basket
+ *  (`category === 'bundle'`) always groups as its own "Кошници" category,
+ *  regardless of taxonomy or whatever subcategoryId it happens to carry —
+ *  it's identified by category, not by the tenant's subcategory tree. */
 export function catIdOf(p: Product, multiSubcat: boolean): string {
+  if (isBundle(p)) return 'bundle';
   return (multiSubcat ? p.subcategoryId : p.category) || '';
 }
 
 export function categoriesFrom(products: Product[], subcats: Subcategory[], multiSubcat: boolean): Category[] {
   if (multiSubcat && subcats.length) {
-    return subcats.map((s) => ({
+    const cats = subcats.map((s) => ({
       id: s.id,
       name: s.name,
       desc: s.description || 'Продукти от тази категория, директно от фермера.',
       icon: iconForCategory(s.name),
       imageUrl: s.imageUrl,
       coverCrop: s.coverCrop ?? null,
-      count: products.filter((p) => p.subcategoryId === s.id).length,
+      // Baskets never count here even if they carry this subcategoryId — they
+      // get their own synthetic "Кошници" entry below, so a basket is counted
+      // exactly once.
+      count: products.filter((p) => p.subcategoryId === s.id && !isBundle(p)).length,
     }));
+    const bundleCount = products.filter(isBundle).length;
+    if (bundleCount > 0) {
+      cats.push({
+        id: 'bundle',
+        name: BUNDLE_LABEL,
+        desc: BUNDLE_DESC,
+        icon: iconForCategory(BUNDLE_LABEL),
+        imageUrl: null,
+        coverCrop: null,
+        count: bundleCount,
+      });
+    }
+    return cats;
   }
   const seen = new Map<string, number>();
   for (const p of products) {
@@ -51,7 +90,7 @@ export function categoriesFrom(products: Product[], subcats: Subcategory[], mult
   return [...seen.entries()].map(([id, count]) => ({
     id,
     name: catLabel(id),
-    desc: 'Свежи продукти от местните фермери.',
+    desc: id === 'bundle' ? BUNDLE_DESC : 'Свежи продукти от местните фермери.',
     icon: iconForCategory(catLabel(id)),
     imageUrl: null,
     coverCrop: null,

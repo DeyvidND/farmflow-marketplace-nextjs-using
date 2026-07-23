@@ -1,8 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import { recent, sortByTier } from './catalog';
+import { recent, sortByTier, catIdOf, categoriesFrom } from './catalog';
+import type { Product, Subcategory } from './types';
 
 const P = (id: string, createdAt: string | null, isActive = true) =>
   ({ id, createdAt, isActive }) as any;
+
+const product = (overrides: Partial<Product> = {}): Product => ({
+  id: 'p1',
+  name: 'Продукт',
+  slug: 'produkt',
+  description: null,
+  priceStotinki: 500,
+  unit: 'бр.',
+  weight: null,
+  category: 'zelenchuci',
+  tint: null,
+  isActive: true,
+  imageUrl: null,
+  farmerId: null,
+  subcategoryId: null,
+  featured: false,
+  createdAt: null,
+  ...overrides,
+});
+
+const subcat = (overrides: Partial<Subcategory> = {}): Subcategory => ({
+  id: 'sub1',
+  name: 'Зеленчуци',
+  description: null,
+  tint: null,
+  imageUrl: null,
+  position: 0,
+  createdAt: null,
+  ...overrides,
+});
 
 describe('recent', () => {
   const now = new Date('2026-07-11T00:00:00Z');
@@ -39,5 +70,56 @@ describe('sortByTier', () => {
       { id: 'b', tier: 2, position: 1 },
     ] as any[];
     expect(sortByTier(fs).map((f) => f.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('catIdOf — Кошници', () => {
+  it('groups a bundle under "bundle" in free-text taxonomy mode (multiSubcat=false)', () => {
+    const p = product({ category: 'bundle', subcategoryId: null });
+    expect(catIdOf(p, false)).toBe('bundle');
+  });
+
+  it('groups a bundle under "bundle" in subcategory taxonomy mode, regardless of its subcategoryId', () => {
+    // A basket is identified by category, not by whatever subcategory tree id it
+    // happens to carry — it must NOT group under that subcategory.
+    const p = product({ category: 'bundle', subcategoryId: 'sub1' });
+    expect(catIdOf(p, true)).toBe('bundle');
+  });
+});
+
+describe('categoriesFrom — Кошници (multiSubcat branch)', () => {
+  const subcats = [subcat({ id: 'sub1', name: 'Зеленчуци' })];
+
+  it('excludes bundles from the subcategory count they happen to carry', () => {
+    const products = [
+      product({ id: 'p1', category: 'zelenchuci', subcategoryId: 'sub1' }),
+      // Same subcategoryId as p1, but it's a basket — must not inflate sub1's count.
+      product({ id: 'p2', category: 'bundle', subcategoryId: 'sub1' }),
+    ];
+    const cats = categoriesFrom(products, subcats, true);
+    const sub1 = cats.find((c) => c.id === 'sub1');
+    expect(sub1?.count).toBe(1);
+  });
+
+  it('appends a synthetic "Кошници" category, counting every bundle regardless of subcategoryId', () => {
+    const products = [
+      product({ id: 'p1', category: 'zelenchuci', subcategoryId: 'sub1' }),
+      product({ id: 'p2', category: 'bundle', subcategoryId: 'sub1' }),
+      product({ id: 'p3', category: 'bundle', subcategoryId: null }),
+    ];
+    const cats = categoriesFrom(products, subcats, true);
+    const bundleCat = cats.find((c) => c.id === 'bundle');
+    expect(bundleCat).toMatchObject({
+      id: 'bundle',
+      name: 'Кошници',
+      desc: 'Готови кошници с продукти от няколко фермери, на обща цена.',
+      count: 2,
+    });
+  });
+
+  it('does not append the synthetic "Кошници" category when there are no bundles', () => {
+    const products = [product({ id: 'p1', category: 'zelenchuci', subcategoryId: 'sub1' })];
+    const cats = categoriesFrom(products, subcats, true);
+    expect(cats.find((c) => c.id === 'bundle')).toBeUndefined();
   });
 });
