@@ -50,7 +50,16 @@ export function ProductCard({
   const tag = p.featured ? "Хит" : pd.compareStotinki != null ? "Промо" : null;
 
   const onAdd = () => {
-    add({ id: p.id, name: p.name, price: pd.headlineStotinki / 100, weight: p.weight });
+    add({
+      id: p.id,
+      name: p.name,
+      price: pd.headlineStotinki / 100,
+      weight: p.weight,
+      farmerId: p.farmerId ?? undefined,
+      farmerName: farmerName ?? undefined,
+      requiresCompanion: p.requiresCompanion,
+      companionMinStotinki: p.companionMinPriceStotinki,
+    });
     toast.success(`Добави ${p.name}`, { description: "в количката" });
   };
 

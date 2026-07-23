@@ -9,6 +9,12 @@ export interface CartItem {
   price: number;
   weight?: string | null;
   qty: number;
+  /** Selling farmer, stamped at add-time (see lib/sellers.ts). */
+  farmerId?: string;
+  farmerName?: string;
+  /** Loss-leader flag + threshold, stamped at add-time (see lib/companion.ts). */
+  requiresCompanion?: boolean;
+  companionMinStotinki?: number | null;
 }
 
 interface CartCtx {

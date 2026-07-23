@@ -51,7 +51,19 @@ export function ProductDetail({
 
   const onAdd = () => {
     const label = selVariant ? `${p.name} · ${selVariant.label}` : p.name;
-    add({ id: selVariant ? `${p.id}:${selVariant.id}` : p.id, name: label, price: priceStotinki / 100, weight: p.weight }, qty);
+    add(
+      {
+        id: selVariant ? `${p.id}:${selVariant.id}` : p.id,
+        name: label,
+        price: priceStotinki / 100,
+        weight: p.weight,
+        farmerId: p.farmerId ?? undefined,
+        farmerName: farmerName ?? undefined,
+        requiresCompanion: p.requiresCompanion,
+        companionMinStotinki: p.companionMinPriceStotinki,
+      },
+      qty,
+    );
     toast.success(`Добави ${label}`, { description: `${qty} бр. в количката` });
   };
 
