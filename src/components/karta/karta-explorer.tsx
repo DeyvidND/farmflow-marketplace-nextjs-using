@@ -39,7 +39,7 @@ function FilterFields({
           onChange={(e) => onQ(e.target.value)}
           type="search"
           placeholder="Име, продукт или описание"
-          className="h-11 rounded-xl border-line-strong bg-background pl-10 text-[14.5px]"
+          className="h-[52px] rounded-xl border-line-strong bg-background pl-10 text-[16px]"
         />
       </div>
 
@@ -147,16 +147,16 @@ export function KartaExplorer({
 
   return (
     <div className="mt-7">
-      <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
         {/* Desktop sidebar */}
         <aside className="hidden self-start rounded-2xl border border-border bg-card lg:block">
-          <div className="border-b border-border px-5 py-4 font-heading text-base font-semibold">Филтри</div>
+          <div className="border-b border-border px-5 py-4 font-heading text-lg font-semibold">Филтри</div>
           <FilterFields {...filterFieldsProps} />
         </aside>
 
         {/* Mobile collapsible filters */}
         <details className="group rounded-2xl border border-border bg-card lg:hidden">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-5 py-4 font-heading text-base font-semibold [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-5 py-4 font-heading text-lg font-semibold [&::-webkit-details-marker]:hidden">
             Филтри
             <ChevronDown className="size-[18px] text-muted-foreground transition-transform group-open:rotate-180" />
           </summary>
@@ -170,7 +170,11 @@ export function KartaExplorer({
               visible below it — both driven by the same filters. */}
           {hasMapsKey && (
             <div className="relative mb-5">
-              <FarmerMap points={filteredPoints} onSelect={selectPoint} />
+              {/* The map (not the panel — it's a sibling) blurs slightly while a
+                  farmer card is open, pulling focus to the panel. */}
+              <div className={selectedFarmer ? "blur-[2px] brightness-[0.97] transition-[filter] duration-200" : "transition-[filter] duration-200"}>
+                <FarmerMap points={filteredPoints} onSelect={selectPoint} />
+              </div>
               {selectedFarmer && (
                 <FarmerDetailPanel
                   farmer={selectedFarmer}
