@@ -172,3 +172,67 @@ export interface Bootstrap {
   /** Curated storefront reviews for the home page (shape owned by the API). */
   homeReviews?: unknown[];
 }
+
+/* ---- Articles (public /articles, /articles/:slug) ---- */
+
+export interface ArticleMedia {
+  id: string;
+  type: 'image' | 'video' | 'youtube' | 'instagram';
+  url: string;
+  embedId: string | null;
+  caption: string | null;
+  position: number;
+}
+
+export interface Article {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  body: string | null;
+  coverImageUrl: string | null;
+  category: string | null;
+  status: 'published' | 'draft';
+  publishedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  media: ArticleMedia[];
+}
+
+/* ---- Reviews (public /reviews) ---- */
+
+export interface Review {
+  id: string;
+  authorName: string;
+  authorLocation: string | null;
+  rating: number;
+  body: string;
+  createdAt: string | null;
+}
+
+export interface ReviewSummary {
+  average: number;
+  count: number;
+  reviews: Review[];
+}
+
+/* ---- Public order recap (public /orders/:id — UUID-gated, no PII echoed) ---- */
+
+export interface PublicOrderItem {
+  name: string;
+  quantity: number;
+  priceStotinki: number;
+}
+
+export interface PublicOrderSummary {
+  id: string;
+  orderNumber: number | null;
+  status: 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
+  paidAt: string | null;
+  totalStotinki: number;
+  deliveryType: string | null;
+  econtOffice: string | null;
+  slot: { date: string; startTime: string; endTime: string } | null;
+  items: PublicOrderItem[];
+  createdAt: string | null;
+}

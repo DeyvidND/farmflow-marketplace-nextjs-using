@@ -92,8 +92,14 @@ export function CheckoutView() {
       }
       const data = await res.json().catch(() => ({}));
       const num = data?.orderNumber ?? data?.orders?.[0]?.orderNumber ?? data?.number ?? "";
+      // Order UUID → the public status page (/order/[id]). CheckoutResult carries
+      // it as orderId; the courier-split shape nests it under orders[0].
+      const oid = data?.orderId ?? data?.orders?.[0]?.orderId ?? "";
       clear();
-      router.push(`/confirmation${num ? `?n=${encodeURIComponent(num)}` : ""}`);
+      const q = new URLSearchParams();
+      if (num) q.set("n", String(num));
+      if (oid) q.set("o", String(oid));
+      router.push(`/confirmation${q.size ? `?${q}` : ""}`);
     } catch {
       toast.error("Няма връзка със сървъра. Опитай отново.");
     } finally {

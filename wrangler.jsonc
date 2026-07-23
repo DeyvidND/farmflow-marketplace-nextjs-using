@@ -10,5 +10,10 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  // Workers Logs in the CF dash — without this a 500 in production is invisible
+  // until a customer reports it.
+  "observability": {
+    "enabled": true
   }
 }
