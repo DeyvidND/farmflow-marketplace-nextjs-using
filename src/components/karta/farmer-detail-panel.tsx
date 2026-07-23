@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { X, MapPin, BadgeCheck } from "lucide-react";
+import { X, MapPin, BadgeCheck, ArrowLeft } from "lucide-react";
 import { CfImg } from "@/components/cf-img";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -73,47 +73,51 @@ export function FarmerDetailPanel({
         <X className="size-5" />
       </button>
 
-      <div className="p-5 pt-14 sm:p-6 sm:pt-16">
-        <div className="flex items-center gap-3.5">
-          <div
-            className="relative size-16 shrink-0 overflow-hidden rounded-full"
-            style={{ background: bg }}
-          >
-            {img ? (
-              <CfImg src={img} width={160} alt={farmer.name} className="absolute inset-0 size-full object-cover" />
-            ) : (
-              <span
-                className="absolute inset-0 grid place-items-center text-lg font-extrabold"
-                style={{ color: fg }}
-              >
-                {initials(farmer.name)}
-              </span>
-            )}
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="truncate font-heading text-lg font-semibold">{farmer.name}</span>
-              <BadgeCheck className="size-[17px] shrink-0 text-primary" />
-            </div>
-            {farmer.role && <div className="mt-0.5 text-[13px] text-muted-foreground">{farmer.role}</div>}
-          </div>
+      <div className="flex min-h-full flex-col items-center justify-center px-6 py-9 text-center sm:pt-12">
+        {/* portrait card, centered */}
+        <div
+          className="relative aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-2xl"
+          style={{ background: bg }}
+        >
+          {img ? (
+            <CfImg
+              src={img}
+              width={480}
+              sizes="280px"
+              alt={farmer.name}
+              className="absolute inset-0 size-full object-cover object-top"
+            />
+          ) : (
+            <span
+              className="absolute inset-0 grid place-items-center text-4xl font-extrabold"
+              style={{ color: fg }}
+            >
+              {initials(farmer.name)}
+            </span>
+          )}
         </div>
 
+        <div className="mt-5 flex items-center justify-center gap-1.5">
+          <h2 className="font-heading text-[23px] font-bold">{farmer.name}</h2>
+          <BadgeCheck className="size-[18px] shrink-0 text-primary" />
+        </div>
+        {farmer.role && <div className="mt-0.5 text-[13.5px] font-semibold text-muted-foreground">{farmer.role}</div>}
+
         {farmer.city && (
-          <div className="mt-3.5 flex items-center gap-1.5 text-[13.5px] text-foreground/75">
-            <MapPin className="size-4 shrink-0 text-muted-foreground" />
+          <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[13.5px] text-muted-foreground">
+            <MapPin className="size-4 shrink-0" />
             {farmer.city}
           </div>
         )}
 
         {farmer.bio && (
-          <p className="mt-3.5 line-clamp-6 text-[14px] leading-relaxed text-foreground/80 whitespace-pre-line">
+          <p className="mt-3.5 line-clamp-6 max-w-[340px] text-[14px] leading-relaxed text-foreground/80 whitespace-pre-line">
             {farmer.bio}
           </p>
         )}
 
         {catNames.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
             {catNames.map((name) => (
               <Badge key={name} variant="secondary" className="h-6 rounded-full px-3 text-[12px] font-bold">
                 {name}
@@ -124,10 +128,17 @@ export function FarmerDetailPanel({
 
         <Link
           href={slug ? `/farmer/${slug}` : "/farmers"}
-          className={cn(buttonVariants(), "mt-5 h-11 w-full rounded-xl font-bold")}
+          className={cn(buttonVariants(), "mt-6 h-12 w-full max-w-[320px] rounded-xl font-bold")}
         >
           Виж магазина
         </Link>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-2.5 inline-flex h-12 w-full max-w-[320px] items-center justify-center gap-1.5 rounded-xl border border-line-strong font-bold text-foreground/75 transition-colors hover:border-primary hover:text-primary"
+        >
+          <ArrowLeft className="size-[18px]" /> Назад към картата
+        </button>
       </div>
       </div>
     </>
