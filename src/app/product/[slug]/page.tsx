@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCatalog } from "@/lib/api";
+import { bundleMemberPhotos } from "@/lib/catalog";
 import { farmerSlugMap } from "@/lib/farmer-slug";
 import { cfImage } from "@/lib/img";
 import { StoreShell } from "@/components/store-shell";
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   // A кошница with no cover photo of its own falls back to its first member's
   // photo for the social preview — a grid of tiles isn't a valid og:image.
-  const bundleImages = (p.bundleProducts ?? []).map((b) => b.image).filter((s): s is string => !!s);
+  const bundleImages = bundleMemberPhotos(p);
   const productImages = p.images?.length ? p.images : p.imageUrl ? [p.imageUrl] : bundleImages;
   const ogImage = productImages[0] ? cfImage(productImages[0], 1200) : undefined;
 

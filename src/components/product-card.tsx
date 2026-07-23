@@ -11,7 +11,7 @@ import { useCart } from "@/components/cart/cart-provider";
 import { CfImg } from "@/components/cf-img";
 import { cfImage } from "@/lib/img";
 import { coverCropStyle, shapeAspect } from "@/lib/cover";
-import { isRecent, isBundle } from "@/lib/catalog";
+import { isRecent, isBundle, bundleMemberPhotos } from "@/lib/catalog";
 import { eur, bgn } from "@/lib/money";
 import { priceDisplay, discountPercent, hasVariants, allVariantsSoldOut } from "@/lib/pricing";
 import type { Product } from "@/lib/types";
@@ -54,10 +54,7 @@ export function ProductCard({
   // A basket with no cover photo of its own is drawn as a grid of its members'
   // photos — up to four, in the order the operator arranged them. An uploaded
   // cover always wins.
-  const memberPhotos = (p.bundleProducts ?? [])
-    .map((b) => b.image)
-    .filter((s): s is string => !!s)
-    .slice(0, 4);
+  const memberPhotos = bundleMemberPhotos(p, 4);
   const showTiles = bundle && !p.imageUrl && memberPhotos.length >= 2;
 
   const onAdd = () => {

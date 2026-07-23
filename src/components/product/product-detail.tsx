@@ -10,7 +10,7 @@ import { useCart } from "@/components/cart/cart-provider";
 import { CfImg } from "@/components/cf-img";
 import { cfImage, cfSrcset } from "@/lib/img";
 import { coverCropStyle } from "@/lib/cover";
-import { isBundle } from "@/lib/catalog";
+import { isBundle, bundleMemberPhotos } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 import { eur, bgn } from "@/lib/money";
 import {
@@ -44,10 +44,7 @@ export function ProductDetail({
   // A basket with no cover photo of its own is drawn as a grid of its members'
   // photos — up to four, in the order the operator arranged them. An uploaded
   // cover always wins.
-  const memberPhotos = (p.bundleProducts ?? [])
-    .map((b) => b.image)
-    .filter((s): s is string => !!s)
-    .slice(0, 4);
+  const memberPhotos = bundleMemberPhotos(p, 4);
   const showTiles = bundle && !p.imageUrl && memberPhotos.length >= 2;
   // The main frame adapts to the photo's own proportions (clamped so the layout
   // stays sane) — the buyer inspects the product here, cropping it is a sin.

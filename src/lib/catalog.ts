@@ -21,6 +21,16 @@ export function isBundle(p: Pick<Product, 'category'>): boolean {
   return p.category === 'bundle';
 }
 
+/** A basket's cover-fallback photos: its members' images, in the order the
+ *  operator arranged them, capped at `max`. Used both for the 2×2 member-photo
+ *  tile grid (cards/PDP) and the og:image fallback (no cap needed there). */
+export function bundleMemberPhotos(p: Pick<Product, 'bundleProducts'>, max = Infinity): string[] {
+  return (p.bundleProducts ?? [])
+    .map((b) => b.image)
+    .filter((s): s is string => !!s)
+    .slice(0, max);
+}
+
 /** Best-effort lucide icon by category name. */
 export function iconForCategory(name: string | null | undefined): string {
   const n = (name || '').toLowerCase();
