@@ -51,11 +51,19 @@ export function FarmerDetailPanel({
   const [bg, fg] = avatarOf(farmer.id);
 
   return (
-    <div
-      role="dialog"
-      aria-label={farmer.name}
-      className="fixed inset-x-0 bottom-0 z-30 max-h-[60vh] overflow-y-auto rounded-t-2xl border-t border-line-strong bg-card shadow-[0_-12px_32px_-14px_rgba(38,73,47,0.35)] lg:absolute lg:inset-x-auto lg:top-4 lg:right-4 lg:bottom-4 lg:left-auto lg:z-10 lg:max-h-none lg:w-[340px] lg:rounded-2xl lg:border lg:border-line-strong lg:shadow-[0_16px_40px_-12px_rgba(38,73,47,0.35)]"
-    >
+    <>
+      {/* Full-page dim + blur behind the drawer; click to close. */}
+      <div
+        onClick={onClose}
+        aria-hidden
+        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] animate-in fade-in duration-200"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={farmer.name}
+        className="fixed inset-x-0 bottom-0 z-50 max-h-[75vh] overflow-y-auto rounded-t-2xl border-t border-line-strong bg-card shadow-[0_-12px_32px_-14px_rgba(38,73,47,0.35)] animate-in slide-in-from-bottom duration-200 lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:bottom-0 lg:max-h-none lg:w-[400px] lg:rounded-none lg:rounded-l-2xl lg:border-l lg:border-t-0 lg:border-line-strong lg:shadow-[-16px_0_40px_-12px_rgba(38,73,47,0.35)] lg:slide-in-from-right"
+      >
       <button
         type="button"
         onClick={onClose}
@@ -121,6 +129,7 @@ export function FarmerDetailPanel({
           Виж магазина
         </Link>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

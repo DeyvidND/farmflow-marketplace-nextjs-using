@@ -169,23 +169,21 @@ export function KartaExplorer({
           {/* Роден Дар layout: map on top, the farmers-page card grid always
               visible below it — both driven by the same filters. */}
           {hasMapsKey && (
-            <div className="relative mb-5">
-              {/* The map (not the panel — it's a sibling) blurs slightly while a
-                  farmer card is open, pulling focus to the panel. */}
-              <div className={selectedFarmer ? "blur-[2px] brightness-[0.97] transition-[filter] duration-200" : "transition-[filter] duration-200"}>
-                <FarmerMap points={filteredPoints} onSelect={selectPoint} />
-              </div>
-              {selectedFarmer && (
-                <FarmerDetailPanel
-                  farmer={selectedFarmer}
-                  products={products}
-                  slug={slugs.get(selectedFarmer.id) ?? null}
-                  categories={categories}
-                  multiSubcat={multiSubcat}
-                  onClose={() => setSelectedFarmerId(null)}
-                />
-              )}
+            <div className="mb-5">
+              <FarmerMap points={filteredPoints} onSelect={selectPoint} />
             </div>
+          )}
+          {/* Full-page drawer + backdrop — lives at the page level, not inside
+              the map box, so it overlays the whole viewport. */}
+          {selectedFarmer && (
+            <FarmerDetailPanel
+              farmer={selectedFarmer}
+              products={products}
+              slug={slugs.get(selectedFarmer.id) ?? null}
+              categories={categories}
+              multiSubcat={multiSubcat}
+              onClose={() => setSelectedFarmerId(null)}
+            />
           )}
           <FarmerGrid
             farmers={filteredFarmers}
