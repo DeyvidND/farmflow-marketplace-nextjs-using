@@ -1,24 +1,20 @@
 "use client";
 
 // Client-side Google Maps integration for /karta. Faithful port of the vanilla-JS
-// chaika original: hand-built teardrop pin (data-URI SVG) + a custom `OverlayView`
-// popup card (not `InfoWindow` — its chrome can't be restyled), themed with -next's
-// own tokens rather than chaika's original hex values.
-//
-// Two specific behaviors carried over verbatim because they were bug fixes, not
-// incidental choices:
-//   - POPUP_TOP_CLEARANCE (210px): fitBounds top padding + a pan-into-view nudge
-//     on marker click, so a popup opened near the top of the map isn't clipped.
-//   - Initial zoom clamp (> 11 → 11, once on first `idle`): fitBounds on a single
-//     or tightly-clustered point can zoom in absurdly far; clamp it back down.
+// chaika original for pins + fit/zoom behavior, minus its per-pin `OverlayView`
+// popup: the „Роден Дар"-style explorer renders farmer detail as a plain,
+// absolutely-positioned panel (see `farmer-detail-panel.tsx`) that sits beside
+// the map as a DOM sibling instead of glued to a marker's projected pixel — no
+// custom OverlayView, no preventMapHitsAndGesturesFrom dance, no top-clearance
+// pan-into-view math needed, since the panel never overlaps a marker's own
+// popup chrome.
 import { useEffect, useRef, useState } from "react";
 import type { MapPoint } from "@/lib/farmer-map";
 
-/** `id` of the page's SSR fallback `<ul>` — hidden once the map has booted,
- *  restored if the map unmounts or never boots (no key / script failure). */
-export const KARTA_FALLBACK_LIST_ID = "karta-fallback-list";
-
-const POPUP_TOP_CLEARANCE = 210;
+const MAP_FIT_PADDING = 56;
+// fitBounds on a single or tightly-clustered point can zoom in absurdly far;
+// clamp it back down once, on first `idle` — carried over from the original
+// implementation as a genuine bug fix, unrelated to the removed popup.
 const MAX_INITIAL_ZOOM = 11;
 const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
 
@@ -62,186 +58,111 @@ function loadGoogleMaps(): Promise<void> {
   return mapsLoadPromise;
 }
 
-function buildPopupCard(point: MapPoint, onClose: () => void): HTMLDivElement {
-  const card = document.createElement("div");
-  card.className =
-    "absolute z-10 w-[240px] -translate-x-1/2 -translate-y-[calc(100%+14px)] rounded-2xl border border-line-strong bg-background p-4 shadow-[0_16px_40px_-12px_rgba(38,73,47,0.35)]";
-
-  const close = document.createElement("button");
-  close.type = "button";
-  close.setAttribute("aria-label", "Затвори");
-  close.className =
-    "absolute right-2.5 top-2.5 grid size-6 place-items-center rounded-full text-[16px] leading-none text-muted-foreground hover:bg-secondary hover:text-foreground";
-  close.textContent = "×";
-  close.addEventListener("click", (event) => {
-    event.stopPropagation();
-    onClose();
-  });
-  card.appendChild(close);
-
-  const name = document.createElement("div");
-  name.className = "pr-5 font-heading text-[15.5px] font-semibold text-foreground";
-  name.textContent = point.name;
-  card.appendChild(name);
-
-  if (point.village) {
-    const village = document.createElement("div");
-    village.className = "mt-1 text-[13px] text-muted-foreground";
-    village.textContent = point.village;
-    card.appendChild(village);
-  }
-
-  if (point.slug) {
-    const link = document.createElement("a");
-    link.href = `/farmer/${point.slug}`;
-    link.className = "mt-2.5 inline-flex items-center gap-1 text-[13.5px] font-bold text-primary hover:underline";
-    link.textContent = "Виж профил →";
-    card.appendChild(link);
-  }
-
-  return card;
-}
-
-/** Custom-themed popup positioned via `OverlayView` (not `InfoWindow` — its
- *  chrome can't be restyled to match -next's tokens). */
-function createPopupOverlay(position: google.maps.LatLng, point: MapPoint, onClose: () => void) {
-  class Popup extends google.maps.OverlayView {
-    private el: HTMLDivElement | null = null;
-
-    onAdd() {
-      this.el = buildPopupCard(point, onClose);
-      this.getPanes()?.floatPane.appendChild(this.el);
-      // Popup DOM lives in floatPane, above the map — without this, any click on
-      // the card (other than the ×) bubbles to the map's own click handler and
-      // immediately self-closes the popup that click just opened.
-      google.maps.OverlayView.preventMapHitsAndGesturesFrom(this.el);
-    }
-
-    draw() {
-      if (!this.el) return;
-      const pixel = this.getProjection()?.fromLatLngToDivPixel(position);
-      if (!pixel) return;
-      this.el.style.left = `${pixel.x}px`;
-      this.el.style.top = `${pixel.y}px`;
-    }
-
-    onRemove() {
-      this.el?.remove();
-      this.el = null;
-    }
-  }
-  return new Popup();
-}
-
-/** Invisible overlay whose only job is exposing a live pixel projection, so a
- *  marker's on-screen position can be measured before any popup of its own has
- *  been added to the map (needed for the pan-into-view clearance check). Built
- *  lazily — `google.maps.OverlayView` doesn't exist until the script loads. */
-function createProjectionProbe() {
-  class ProjectionProbe extends google.maps.OverlayView {
-    onAdd() {}
-    draw() {}
-    onRemove() {}
-  }
-  return new ProjectionProbe();
-}
-
-export function FarmerMap({ points }: { points: MapPoint[] }) {
+export function FarmerMap({
+  points,
+  onSelect,
+}: {
+  points: MapPoint[];
+  /** Fired when a pin is clicked — the caller resolves it back to a full
+   *  `Farmer` record (via slug) and opens the detail panel. */
+  onSelect: (point: MapPoint) => void;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  // Kept fresh without re-running the marker-sync effect on every render.
+  const onSelectRef = useRef(onSelect);
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  });
   const [ready, setReady] = useState(false);
 
+  // Boots the map exactly once, whenever a key is configured.
   useEffect(() => {
-    if (!MAPS_KEY || points.length === 0 || !containerRef.current) return;
-
+    if (!MAPS_KEY || !containerRef.current) return;
     let cancelled = false;
-    const markers: google.maps.Marker[] = [];
-    let activePopup: google.maps.OverlayView | null = null;
-    let probe: google.maps.OverlayView | null = null;
 
     loadGoogleMaps()
       .then(() => {
         if (cancelled || !containerRef.current) return;
-
-        const map = new google.maps.Map(containerRef.current, {
+        mapRef.current = new google.maps.Map(containerRef.current, {
           center: { lat: 42.7339, lng: 25.4858 },
           zoom: 7,
           disableDefaultUI: true,
           zoomControl: true,
           clickableIcons: false,
         });
-
-        probe = createProjectionProbe();
-        probe.setMap(map);
-
-        const closeActivePopup = () => {
-          activePopup?.setMap(null);
-          activePopup = null;
-        };
-
-        const bounds = new google.maps.LatLngBounds();
-        points.forEach((point) => {
-          const position = new google.maps.LatLng(point.lat, point.lng);
-          bounds.extend(position);
-
-          const marker = new google.maps.Marker({
-            position,
-            map,
-            title: point.name,
-            icon: {
-              url: PIN_ICON_URL,
-              scaledSize: new google.maps.Size(30, 40),
-              anchor: new google.maps.Point(15, 40),
-            },
-          });
-          marker.addListener("click", () => {
-            closeActivePopup();
-            const popup = createPopupOverlay(position, point, closeActivePopup);
-            popup.setMap(map);
-            activePopup = popup;
-
-            const pixel = probe?.getProjection()?.fromLatLngToDivPixel(position);
-            if (pixel && pixel.y < POPUP_TOP_CLEARANCE) {
-              map.panBy(0, pixel.y - POPUP_TOP_CLEARANCE);
-            }
-          });
-          markers.push(marker);
-        });
-
-        map.addListener("click", closeActivePopup);
-
-        if (!bounds.isEmpty()) {
-          map.fitBounds(bounds, { top: POPUP_TOP_CLEARANCE, right: 64, bottom: 64, left: 64 });
-        }
-        google.maps.event.addListenerOnce(map, "idle", () => {
-          const zoom = map.getZoom();
-          if (zoom !== undefined && zoom > MAX_INITIAL_ZOOM) map.setZoom(MAX_INITIAL_ZOOM);
-        });
-
-        if (cancelled) return;
         setReady(true);
-        document.getElementById(KARTA_FALLBACK_LIST_ID)?.setAttribute("hidden", "");
       })
       .catch(() => {
-        // Offline / blocked / bad key — the SSR fallback list simply stays visible.
+        // Offline / blocked / bad key — the container just stays empty; the
+        // page's "Производители" tab is the fallback route either way.
       });
 
     return () => {
       cancelled = true;
-      markers.forEach((m) => m.setMap(null));
-      activePopup?.setMap(null);
-      probe?.setMap(null);
-      document.getElementById(KARTA_FALLBACK_LIST_ID)?.removeAttribute("hidden");
     };
-  }, [points]);
+  }, []);
 
-  if (!MAPS_KEY || points.length === 0) return null;
+  // Rebuilds pins whenever the filtered point set changes (search/category
+  // filters, or the initial load once the map is ready).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+    if (points.length === 0) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    points.forEach((point) => {
+      const position = new google.maps.LatLng(point.lat, point.lng);
+      bounds.extend(position);
+      const marker = new google.maps.Marker({
+        position,
+        map,
+        title: point.name,
+        icon: {
+          url: PIN_ICON_URL,
+          scaledSize: new google.maps.Size(30, 40),
+          anchor: new google.maps.Point(15, 40),
+        },
+      });
+      marker.addListener("click", () => onSelectRef.current(point));
+      markersRef.current.push(marker);
+    });
+
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, {
+        top: MAP_FIT_PADDING,
+        right: MAP_FIT_PADDING,
+        bottom: MAP_FIT_PADDING,
+        left: MAP_FIT_PADDING,
+      });
+    }
+    google.maps.event.addListenerOnce(map, "idle", () => {
+      const zoom = map.getZoom();
+      if (zoom !== undefined && zoom > MAX_INITIAL_ZOOM) map.setZoom(MAX_INITIAL_ZOOM);
+    });
+  }, [ready, points]);
+
+  // Marker teardown on unmount.
+  useEffect(
+    () => () => {
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+    },
+    [],
+  );
+
+  if (!MAPS_KEY) return null;
 
   return (
     <div
       ref={containerRef}
       role="region"
       aria-label="Карта на фермерите"
-      className={ready ? "h-[520px] w-full rounded-2xl border border-border" : "sr-only h-0 w-0"}
+      className="min-h-[600px] w-full rounded-2xl border border-border bg-secondary/30"
     />
   );
 }

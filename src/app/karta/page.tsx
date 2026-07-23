@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { MapPin } from "lucide-react";
 import { getCatalog } from "@/lib/api";
 import { farmerSlugMap } from "@/lib/farmer-slug";
-import { resolveMapPoints } from "@/lib/farmer-map";
+import { categoriesFrom } from "@/lib/catalog";
 import { StoreShell } from "@/components/store-shell";
-import { FarmerMap, KARTA_FALLBACK_LIST_ID } from "@/components/karta/farmer-map";
+import { KartaExplorer } from "@/components/karta/karta-explorer";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { storefront: sf } = await getCatalog();
@@ -18,7 +16,15 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function KartaPage() {
   const boot = await getCatalog();
   const slugs = farmerSlugMap(boot.farmers);
-  const points = resolveMapPoints(boot.farmers, slugs);
+  const categories = categoriesFrom(boot.products, boot.subcategories, boot.storefront.multiSubcat).map((c) => ({
+    id: c.id,
+    name: c.name,
+  }));
+  // NEXT_PUBLIC_* is inlined at build time and readable on the server too —
+  // decides the default tab and whether the „Карта" toggle even shows (no key
+  // = graceful degradation to the „Производители" list, same contract the
+  // old SSR fallback list used to guarantee).
+  const hasMapsKey = !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
 
   return (
     <StoreShell>
@@ -29,38 +35,14 @@ export default async function KartaPage() {
           Нашите фермери и стопанства из България — по адреса на стопанството, където е известен.
         </p>
 
-        <div className="mt-7 space-y-5">
-          {/* Client-side interactive map — hidden until it boots; the fallback
-              list below is what no-JS/no-key visitors see the whole time. */}
-          <FarmerMap points={points} />
-
-          <ul id={KARTA_FALLBACK_LIST_ID} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {points.length === 0 ? (
-              <li className="col-span-full rounded-2xl border border-dashed border-border bg-card p-6 text-center text-[14.5px] text-muted-foreground">
-                Все още нямаме известен адрес на стопанство за нашите фермери.
-              </li>
-            ) : (
-              points.map((p) => {
-                const card = (
-                  <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-line-strong">
-                    <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-primary">
-                      <MapPin className="size-[18px]" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="font-heading text-[15.5px] font-semibold">{p.name}</div>
-                      {p.village && <div className="mt-0.5 text-[13px] text-muted-foreground">{p.village}</div>}
-                    </div>
-                  </div>
-                );
-                return (
-                  <li key={`${p.name}-${p.lat}-${p.lng}`}>
-                    {p.slug ? <Link href={`/farmer/${p.slug}`}>{card}</Link> : card}
-                  </li>
-                );
-              })
-            )}
-          </ul>
-        </div>
+        <KartaExplorer
+          farmers={boot.farmers}
+          products={boot.products}
+          categories={categories}
+          multiSubcat={boot.storefront.multiSubcat}
+          slugPairs={[...slugs.entries()]}
+          hasMapsKey={hasMapsKey}
+        />
       </div>
     </StoreShell>
   );
