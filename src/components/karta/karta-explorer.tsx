@@ -9,14 +9,6 @@ import { FarmerMap } from "@/components/karta/farmer-map";
 import { FarmerDetailPanel } from "@/components/karta/farmer-detail-panel";
 import { FarmerGrid } from "@/components/karta/farmer-grid";
 
-type Tab = "list" | "map";
-
-function pillClass(active: boolean) {
-  return `h-10 rounded-full px-4 text-sm font-bold transition-colors ${
-    active ? "bg-primary text-primary-foreground" : "text-foreground/70 hover:text-foreground"
-  }`;
-}
-
 /** Sidebar filter body — rendered twice by the parent (always-open desktop
  *  card, collapsible mobile `<details>`) so both share one implementation. */
 function FilterFields({
@@ -102,7 +94,6 @@ export function KartaExplorer({
   slugPairs: [string, string][];
   hasMapsKey: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>(hasMapsKey ? "map" : "list");
   const [q, setQ] = useState("");
   const [cats, setCats] = useState<Set<string>>(new Set());
   const [selectedFarmerId, setSelectedFarmerId] = useState<string | null>(null);
@@ -156,22 +147,6 @@ export function KartaExplorer({
 
   return (
     <div className="mt-7">
-      {hasMapsKey && (
-        <div className="mb-5 inline-flex rounded-full border border-line-strong bg-card p-1">
-          <button type="button" aria-pressed={tab === "list"} onClick={() => setTab("list")} className={pillClass(tab === "list")}>
-            Производители
-          </button>
-          <button
-            type="button"
-            aria-pressed={tab === "map"}
-            onClick={() => setTab("map")}
-            className={pillClass(tab === "map")}
-          >
-            Карта
-          </button>
-        </div>
-      )}
-
       <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
         {/* Desktop sidebar */}
         <aside className="hidden self-start rounded-2xl border border-border bg-card lg:block">
@@ -191,8 +166,10 @@ export function KartaExplorer({
         </details>
 
         <div className="min-w-0">
-          {tab === "map" && hasMapsKey ? (
-            <div className="relative">
+          {/* Роден Дар layout: map on top, the farmers-page card grid always
+              visible below it — both driven by the same filters. */}
+          {hasMapsKey && (
+            <div className="relative mb-5">
               <FarmerMap points={filteredPoints} onSelect={selectPoint} />
               {selectedFarmer && (
                 <FarmerDetailPanel
@@ -205,15 +182,14 @@ export function KartaExplorer({
                 />
               )}
             </div>
-          ) : (
-            <FarmerGrid
-              farmers={filteredFarmers}
-              products={products}
-              categories={categories}
-              multiSubcat={multiSubcat}
-              slugs={slugs}
-            />
           )}
+          <FarmerGrid
+            farmers={filteredFarmers}
+            products={products}
+            categories={categories}
+            multiSubcat={multiSubcat}
+            slugs={slugs}
+          />
         </div>
       </div>
     </div>
