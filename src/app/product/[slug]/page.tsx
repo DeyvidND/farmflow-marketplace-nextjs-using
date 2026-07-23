@@ -58,6 +58,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         farmerName={farmer?.name ?? null}
         farmerSlug={farmer ? slugs.get(farmer.id) ?? null : null}
         farmerImage={farmer?.images?.[0] ?? farmer?.imageUrl ?? null}
+        farmerLegal={farmer?.legal ?? null}
         remaining={remaining}
       />
     </StoreShell>

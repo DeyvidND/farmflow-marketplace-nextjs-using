@@ -28,7 +28,8 @@ export function CheckoutView() {
   const router = useRouter();
   const { items, total, clear } = useCart();
   const [method, setMethod] = useState<Method>("pickup");
-  const sellerCount = distinctSellers(items).length;
+  const sellers = distinctSellers(items);
+  const sellerCount = sellers.length;
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ customerName: "", customerPhone: "", customerEmail: "", address: "", notes: "" });
 
@@ -173,6 +174,12 @@ export function CheckoutView() {
                 <span className="ml-1.5 text-[13px] text-muted-foreground">({(total * EUR_TO_BGN).toFixed(2).replace(".", ",")} лв.)</span>
               </span>
             </div>
+            {sellerCount >= 2 && (
+              <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-3.5 text-[12.5px] text-muted-foreground">
+                Поръчка от {sellerCount} производители. Договорът за всеки продукт се сключва със съответния
+                производител — пазарът е посредник (онлайн място за търговия). Продавачи: {sellers.map((s) => s.name).join(", ")}.
+              </div>
+            )}
             <Button type="submit" disabled={busy} className="mt-4 h-12 w-full rounded-xl text-base font-bold">
               {busy ? "Изпращане…" : "Поръчай сега"}
             </Button>

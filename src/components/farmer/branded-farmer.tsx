@@ -1,9 +1,10 @@
-import { BadgeCheck, Award, Leaf } from "lucide-react";
+import { BadgeCheck, Award, Leaf, MapPin } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { Farmer, Product } from "@/lib/types";
 import { CfImg } from "@/components/cf-img";
 import { SmartGallery } from "@/components/farmer/smart-gallery";
 import { ProductCard } from "@/components/product-card";
+import { legalIdLine } from "@/lib/legal";
 
 /**
  * Tier-2 „Бранд идентичност" farmer subpage. Rendered only when `farmer.branding.enabled`.
@@ -105,6 +106,11 @@ export function BrandedFarmer({
             <BadgeCheck className="size-5 shrink-0 text-primary sm:size-6" />
           </div>
           <div className="mt-1 text-[13.5px] font-medium text-muted-foreground sm:text-[14px]">{meta}</div>
+          {farmer.legal?.address && (
+            <div className="mt-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+              <MapPin className="size-3.5 shrink-0" /> {farmer.legal.address}
+            </div>
+          )}
         </div>
       </div>
 
@@ -127,6 +133,20 @@ export function BrandedFarmer({
         <p className="font-heading mt-5 max-w-[56ch] text-[16px] italic leading-relaxed text-foreground/85 whitespace-pre-line">
           „{farmer.bio}“
         </p>
+      )}
+
+      {/* seller disclosure (КЗП) — only once the operator has filled in legal identity */}
+      {farmer.legal?.name && (
+        <div className="mt-5 max-w-[56ch] rounded-2xl border border-border bg-secondary/40 p-4 text-[13.5px]">
+          <div className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Продавач</div>
+          <div className="mt-1 font-bold text-foreground">{farmer.legal.name}</div>
+          {legalIdLine(farmer.legal) && (
+            <div className="mt-0.5 text-muted-foreground">{legalIdLine(farmer.legal)}</div>
+          )}
+          <p className="mt-2 text-muted-foreground">
+            Продавач по договора за поръчката е този производител. Пазарът предоставя онлайн мястото за търговия като посредник.
+          </p>
+        </div>
       )}
 
       {/* gallery — aspect-aware justified rows, photos keep their own proportions */}

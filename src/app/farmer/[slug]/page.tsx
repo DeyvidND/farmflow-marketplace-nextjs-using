@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, MapPin } from "lucide-react";
 import { getCatalog } from "@/lib/api";
 import { farmerSlugMap } from "@/lib/farmer-slug";
 import { cfImage } from "@/lib/img";
+import { legalIdLine } from "@/lib/legal";
 import { SITE_URL } from "@/lib/config";
 import { StoreShell } from "@/components/store-shell";
 import { ProductCard } from "@/components/product-card";
@@ -87,10 +88,28 @@ export default async function FarmerPage({ params }: { params: Promise<{ slug: s
             <div className="mt-1 text-[15px] text-muted-foreground">
               {[farmer.city, farmer.role, farmer.since ? `от ${farmer.since}` : null, `${products.length} продукта`].filter(Boolean).join(" · ")}
             </div>
+            {farmer.legal?.address && (
+              <div className="mt-1 flex items-center gap-1.5 text-[13.5px] text-muted-foreground">
+                <MapPin className="size-3.5 shrink-0" /> {farmer.legal.address}
+              </div>
+            )}
           </div>
         </div>
         {farmer.bio && (
           <p className="mt-5 max-w-3xl text-[16px] leading-relaxed text-foreground/85 whitespace-pre-line">{farmer.bio}</p>
+        )}
+
+        {farmer.legal?.name && (
+          <div className="mt-5 max-w-3xl rounded-2xl border border-border bg-secondary/40 p-4 text-[13.5px]">
+            <div className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Продавач</div>
+            <div className="mt-1 font-bold text-foreground">{farmer.legal.name}</div>
+            {legalIdLine(farmer.legal) && (
+              <div className="mt-0.5 text-muted-foreground">{legalIdLine(farmer.legal)}</div>
+            )}
+            <p className="mt-2 text-muted-foreground">
+              Продавач по договора за поръчката е този производител. Пазарът предоставя онлайн мястото за търговия като посредник.
+            </p>
+          </div>
         )}
 
         <h2 className="mt-9 font-heading text-2xl font-bold">Продукти</h2>

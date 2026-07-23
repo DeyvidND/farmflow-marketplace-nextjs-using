@@ -14,7 +14,8 @@ import { eur, bgn } from "@/lib/money";
 import {
   priceDisplay, discountPercent, hasVariants, allVariantsSoldOut, variantPriceStotinki,
 } from "@/lib/pricing";
-import type { Product } from "@/lib/types";
+import { legalIdLine } from "@/lib/legal";
+import type { Product, FarmerLegal } from "@/lib/types";
 
 function initials(name: string) {
   return name.trim().split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toLocaleUpperCase("bg");
@@ -26,6 +27,7 @@ export function ProductDetail({
   farmerName,
   farmerSlug,
   farmerImage,
+  farmerLegal,
   remaining,
 }: {
   product: Product;
@@ -33,6 +35,7 @@ export function ProductDetail({
   farmerName: string | null;
   farmerSlug: string | null;
   farmerImage: string | null;
+  farmerLegal: FarmerLegal | null;
   remaining: number | null;
 }) {
   const { add } = useCart();
@@ -198,6 +201,19 @@ export function ProductDetail({
           {p.description && (
             <div className="mt-7 border-t border-border pt-6 text-[15px] leading-relaxed text-foreground/85 whitespace-pre-line">
               {p.description}
+            </div>
+          )}
+
+          {farmerLegal?.name && (
+            <div className="mt-6 rounded-2xl border border-border bg-secondary/40 p-4 text-[13.5px]">
+              <div className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Продавач на този продукт</div>
+              <div className="mt-1 font-bold text-foreground">{farmerLegal.name}</div>
+              {legalIdLine(farmerLegal) && (
+                <div className="mt-0.5 text-muted-foreground">{legalIdLine(farmerLegal)}</div>
+              )}
+              <p className="mt-2 text-muted-foreground">
+                Договорът за покупка се сключва с този производител. Пазарът е посредник (онлайн място за търговия).
+              </p>
             </div>
           )}
         </div>
