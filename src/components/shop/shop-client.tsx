@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Truck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductCard } from "@/components/product-card";
 import type { CardData } from "@/lib/card-data";
+import { ONLY_LOCAL_DELIVERY } from "@/lib/config";
 
 const PAGE = 24;
 
@@ -17,34 +18,59 @@ export function ShopClient({
 }: {
   cards: CardData[];
   categories: { id: string; name: string }[];
-  farmers: { id: string; name: string }[];
+  /** `courierReady` is not plumbed through by any caller today — see
+   *  src/lib/config.ts `ONLY_LOCAL_DELIVERY`. Optional so this stays
+   *  source-compatible with existing callers; the chip below is dormant
+   *  either way while that flag is true. */
+  farmers: { id: string; name: string; courierReady?: boolean }[];
   initialQ?: string;
 }) {
   const [q, setQ] = useState(initialQ);
   const [cat, setCat] = useState("all");
   const [farmer, setFarmer] = useState("all");
+  const [courierOnly, setCourierOnly] = useState(false);
   const [shown, setShown] = useState(PAGE);
 
   const nq = q.trim().toLocaleLowerCase("bg");
+
+  // Farmers who can hand a parcel to a carrier. Used both to decide whether
+  // the "С куриер" chip is worth showing at all, and (once shown) to filter
+  // by it.
+  const courierReadyFarmerIds = useMemo(
+    () => new Set(farmers.filter((f) => f.courierReady).map((f) => f.id)),
+    [farmers],
+  );
+  const isCourierShippable = useCallback(
+    (c: CardData) =>
+      c.product.isActive !== false &&
+      !c.product.courierDisabled &&
+      !!c.farmerId &&
+      courierReadyFarmerIds.has(c.farmerId),
+    [courierReadyFarmerIds],
+  );
+  // Dormant while ONLY_LOCAL_DELIVERY is true (see src/lib/config.ts) — no
+  // card ever qualifies today, so this is always false in production.
+  const courierChipVisible = !ONLY_LOCAL_DELIVERY && cards.some(isCourierShippable);
 
   const matched = useMemo(
     () =>
       cards.filter((c) => {
         if (cat !== "all" && c.cat !== cat) return false;
         if (farmer !== "all" && c.farmerId !== farmer) return false;
+        if (courierOnly && !isCourierShippable(c)) return false;
         if (nq) {
           const hay = `${c.product.name} ${c.farmerName ?? ""}`.toLocaleLowerCase("bg");
           if (!hay.includes(nq)) return false;
         }
         return true;
       }),
-    [cards, cat, farmer, nq],
+    [cards, cat, farmer, courierOnly, isCourierShippable, nq],
   );
 
   // Every filter change starts a fresh page.
   useEffect(() => {
     setShown(PAGE);
-  }, [cat, farmer, nq]);
+  }, [cat, farmer, courierOnly, nq]);
 
   // Deep-link from the homepage's /shop#<categoryId> chips (home page.tsx
   // encodes the id with encodeURIComponent). Read post-mount so the first
@@ -111,11 +137,12 @@ export function ShopClient({
     };
   }, [updateRailFade, categories.length]);
 
-  const filterActive = q.trim() !== "" || cat !== "all" || farmer !== "all";
+  const filterActive = q.trim() !== "" || cat !== "all" || farmer !== "all" || courierOnly;
   const resetFilters = () => {
     setQ("");
     setCat("all");
     setFarmer("all");
+    setCourierOnly(false);
   };
 
   const chips = [{ id: "all", name: "Всички" }, ...categories];
@@ -151,6 +178,21 @@ export function ShopClient({
               ))}
             </SelectContent>
           </Select>
+        )}
+        {courierChipVisible && (
+          <button
+            type="button"
+            aria-pressed={courierOnly}
+            onClick={() => setCourierOnly((v) => !v)}
+            className={`flex h-12 shrink-0 items-center gap-1.5 rounded-xl border px-4 text-sm font-bold transition-colors ${
+              courierOnly
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-line-strong bg-card text-foreground/75 hover:border-primary/40"
+            }`}
+          >
+            <Truck className="size-4" />
+            С куриер
+          </button>
         )}
       </div>
 

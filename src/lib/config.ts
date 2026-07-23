@@ -15,6 +15,14 @@ export const CDN_BASE = (process.env.NEXT_PUBLIC_IMG_CDN ?? 'https://cdn.fermeri
 export const ADMIN_LOGIN_URL = `${(process.env.NEXT_PUBLIC_ADMIN_URL ?? 'https://app.fermeribg.com').replace(/\/+$/, '')}/login`;
 
 /** Courier (Еконт/Спиди) disabled storefront-wide until fixed — local delivery +
- *  pickup only. Gates every courier badge so a card never promises shipping
- *  checkout won't offer. */
+ *  pickup only. Checkout doesn't offer a carrier method at all yet (see
+ *  CARRIER_METHODS in src/lib/courier.ts), so this currently only gates the
+ *  shop's "С куриер" filter chip (src/components/shop/shop-client.tsx) —
+ *  kept true so that chip, and the courier-shipping logic it (and the
+ *  checkout N-deliveries notice) depends on, stay dormant until a carrier
+ *  method actually exists in checkout. */
 export const ONLY_LOCAL_DELIVERY = true;
+
+/** Public origin of this storefront — used for absolute URLs in the sitemap,
+ *  robots.txt sitemap pointer, and JSON-LD (canonical `url` fields). */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://farmmarket.bg').replace(/\/+$/, '');

@@ -10,13 +10,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { eurFromLv, EUR_TO_BGN } from "@/lib/money";
 import { PUBLIC_BASE } from "@/lib/config";
+import { distinctSellers } from "@/lib/sellers";
+import { CARRIER_METHODS } from "@/lib/courier";
 
 type Method = "pickup" | "address";
+
+/** Dormant today: `method` can only ever be "pickup"/"address" (neither is a
+ *  carrier method), so this never renders yet — see src/lib/courier.ts. Typed
+ *  `string` rather than `Method` so it lights up on its own once a carrier
+ *  method is added to checkout, without this file's own Method union having
+ *  to widen for it. */
+function showNDeliveriesNotice(method: string, sellerCount: number): boolean {
+  return sellerCount >= 2 && CARRIER_METHODS.has(method);
+}
 
 export function CheckoutView() {
   const router = useRouter();
   const { items, total, clear } = useCart();
   const [method, setMethod] = useState<Method>("pickup");
+  const sellerCount = distinctSellers(items).length;
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ customerName: "", customerPhone: "", customerEmail: "", address: "", notes: "" });
 
@@ -120,6 +132,12 @@ export function CheckoutView() {
                 <div className="mt-4">
                   <label className="text-sm font-semibold">Адрес за доставка</label>
                   <Input value={form.address} onChange={set("address")} placeholder="ул. Дунав 5, Варна" className="mt-1.5 h-11 rounded-xl border-line-strong bg-card" />
+                </div>
+              )}
+              {showNDeliveriesNotice(method, sellerCount) && (
+                <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-[13px] text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
+                  Продуктите ти са от {sellerCount} различни производители. Ще се създадат {sellerCount} отделни
+                  доставки — по една от всеки фермер, всяка със собствен наложен платеж при получаване.
                 </div>
               )}
             </section>
