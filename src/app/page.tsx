@@ -73,7 +73,11 @@ export default async function Home() {
 
   const cats = categoriesFrom(products, subcats, sf.multiSubcat);
   const showFarmers = sf.multiFarmer;
-  const rankedFarmers = sortByTier(farmers);
+  const active = products.filter((p) => p.isActive !== false);
+  // Farmers with nothing on sale would link to an empty shop from the rail —
+  // keep it (and its paid tier ordering) to farmers with ≥1 active product.
+  const productCount = (id: string) => active.filter((p) => p.farmerId === id).length;
+  const rankedFarmers = sortByTier(farmers).filter((f) => productCount(f.id) > 0);
 
   const slugs = farmerSlugMap(farmers);
   const farmerById = new Map(farmers.map((f) => [f.id, f]));
@@ -82,7 +86,6 @@ export default async function Home() {
     const f = id ? farmerById.get(id) : null;
     return f?.images?.[0] ?? f?.imageUrl ?? null;
   };
-  const productCount = (id: string) => products.filter((p) => p.farmerId === id).length;
   const farmerRole = (f: Farmer) => {
     if (f.role?.trim()) return f.role;
     const c = cats.find((c) => products.some((p) => p.farmerId === f.id && catIdOf(p, sf.multiSubcat) === c.id));
@@ -91,12 +94,15 @@ export default async function Home() {
 
   const availMap = new Map((boot.availability ?? []).map((w) => [w.productId, w.remaining]));
   const bestSellerIds = new Set(boot.bestSellerIds ?? []);
-  const active = products.filter((p) => p.isActive !== false);
   const bestFirst = [
     ...active.filter((p) => bestSellerIds.has(p.id)),
     ...active.filter((p) => !bestSellerIds.has(p.id)),
   ].slice(0, 8);
-  const newProducts = recent(products, 14, 8);
+  // "Ново тази седмица" must not mirror the bestsellers grid right above it:
+  // drop anything already shown there, and keep only genuinely in-window items
+  // (min=0 disables recent()'s top-up, which would refill with old products).
+  const shownInBest = new Set(bestFirst.map((p) => p.id));
+  const newProducts = recent(products.filter((p) => !shownInBest.has(p.id)), 14, 0).slice(0, 8);
   const newFarmers = showFarmers ? recent(farmers, 14, 0) : [];
 
   const cards: CardData[] = bestFirst.map((p) => ({

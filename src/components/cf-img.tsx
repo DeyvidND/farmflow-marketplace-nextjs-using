@@ -1,4 +1,6 @@
-import type { CSSProperties } from "react";
+"use client";
+
+import { useState, type CSSProperties } from "react";
 import { cfImage, cfSrcset } from "@/lib/img";
 
 /**
@@ -9,6 +11,11 @@ import { cfImage, cfSrcset } from "@/lib/img";
  * high fetch priority). Fixed-size slots (avatars, thumbnails) omit `sizes` and get
  * a single right-sized src. Renders null when there's no src, so callers keep their
  * own placeholder branch.
+ *
+ * Dead references happen in production (re-seeds rotate tenant ids under R2
+ * paths; operators delete originals) — on load error the img unmounts instead
+ * of leaving the browser's broken-image icon, so the slot degrades to the
+ * caller's background the same way a missing src does.
  */
 
 // DPR-aware srcset ladder; only widths up to ~2.2× the slot are emitted.
@@ -38,7 +45,8 @@ export function CfImg({
   /** Override the srcset widths; defaults to the ladder up to ~2.2× width. */
   widths?: number[];
 }) {
-  if (!src) return null;
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return null;
   const set = sizes ? (widths ?? LADDER.filter((w) => w <= width * 2.2)) : null;
   const srcSet = set && set.length ? cfSrcset(src, set) : undefined;
   return (
@@ -53,6 +61,7 @@ export function CfImg({
       style={style}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
+      onError={() => setFailed(true)}
       {...(priority ? { fetchPriority: "high" as const } : {})}
     />
   );
