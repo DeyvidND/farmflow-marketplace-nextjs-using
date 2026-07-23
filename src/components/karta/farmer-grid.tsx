@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, MapPin } from "lucide-react";
-import { CfImg } from "@/components/cf-img";
+import { ArrowRight, BadgeCheck } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cfImage } from "@/lib/img";
 import { catIdOf } from "@/lib/catalog";
 import type { Farmer, Product } from "@/lib/types";
 
@@ -19,9 +20,9 @@ function initials(name: string) {
   return name.trim().split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toLocaleUpperCase("bg");
 }
 
-/** „Производители" tab of /karta — same card pattern as the home page's
- *  farmer rail (app/page.tsx), laid out as a grid instead of a horizontal
- *  scroller. Also the forced no-Maps-key fallback (see karta-explorer.tsx). */
+/** „Производители" tab of /farmers (formerly the standalone /farmers grid) —
+ *  the richer card design: shadcn Avatar, a bio line, and a combined
+ *  city/since/product-count footer next to the CTA. */
 export function FarmerGrid({
   farmers,
   products,
@@ -65,15 +66,12 @@ export function FarmerGrid({
             className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-10px_rgba(38,73,47,0.18)]"
           >
             <div className="flex items-center gap-3">
-              <div className="relative size-14 shrink-0 overflow-hidden rounded-full" style={{ background: bg }}>
-                {img ? (
-                  <CfImg src={img} width={140} alt={f.name} className="absolute inset-0 size-full object-cover" />
-                ) : (
-                  <span className="absolute inset-0 grid place-items-center text-lg font-extrabold" style={{ color: fg }}>
-                    {initials(f.name)}
-                  </span>
-                )}
-              </div>
+              <Avatar className="size-14">
+                {img ? <AvatarImage src={cfImage(img, 160)} alt="" /> : null}
+                <AvatarFallback style={{ background: bg, color: fg }} className="text-lg font-extrabold">
+                  {initials(f.name)}
+                </AvatarFallback>
+              </Avatar>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="truncate font-heading text-lg font-semibold">{f.name}</span>
@@ -82,21 +80,17 @@ export function FarmerGrid({
                 <div className="mt-0.5 text-[13px] text-muted-foreground">{roleFor(f)}</div>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-foreground/75">
-              {f.city && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="size-3.5 text-muted-foreground" />
-                  {f.city}
-                </span>
-              )}
-              {f.city && (f.since || n > 0) && <span className="size-[3px] rounded-full bg-line-strong" />}
-              {f.since && <span>от {f.since}</span>}
-              {f.since && n > 0 && <span className="size-[3px] rounded-full bg-line-strong" />}
-              {n > 0 && <span>{n} {n === 1 ? "продукт" : "продукта"}</span>}
+            {f.bio && <p className="line-clamp-2 text-[14px] leading-relaxed text-foreground/75">{f.bio}</p>}
+            <div className="mt-auto flex items-center justify-between gap-3 pt-1">
+              <span className="truncate text-[13px] text-muted-foreground">
+                {[f.city, f.since ? `от ${f.since}` : null, `${n} ${n === 1 ? "продукт" : "продукта"}`]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+              <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-bold text-primary">
+                Виж магазина <ArrowRight className="size-4" />
+              </span>
             </div>
-            <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-bold text-primary">
-              Виж магазина <ArrowRight className="size-4" />
-            </span>
           </Link>
         );
       })}

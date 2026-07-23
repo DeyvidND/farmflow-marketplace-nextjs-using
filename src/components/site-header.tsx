@@ -48,7 +48,7 @@ export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: b
   const NAV = [
     { label: "Категории", href: a("categories") },
     { label: "Магазин", href: "/shop" },
-    ...(multiFarmer ? [{ label: "Фермери", href: "/farmers" }, { label: "Карта", href: "/karta" }] : []),
+    ...(multiFarmer ? [{ label: "Фермери", href: "/farmers" }] : []),
     { label: "Поръчки", href: "/orders" },
     { label: "Как работи", href: "/orders" },
     { label: "Статии", href: "/articles" },

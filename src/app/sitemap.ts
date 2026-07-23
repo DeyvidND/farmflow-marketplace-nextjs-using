@@ -8,7 +8,6 @@ import { SITE_URL } from "@/lib/config";
 const STATIC_PATHS = [
   "/shop",
   "/farmers",
-  "/karta",
   "/about",
   "/contact",
   "/orders",
