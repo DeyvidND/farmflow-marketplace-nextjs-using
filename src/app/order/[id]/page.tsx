@@ -21,7 +21,7 @@ const STATUS: Record<
   pending: {
     label: "Приета",
     icon: Clock,
-    tone: "bg-honey/15 text-honey",
+    tone: "bg-honey/15 text-honey-text",
     note: "Фермерът ще потвърди поръчката съвсем скоро.",
   },
   confirmed: {

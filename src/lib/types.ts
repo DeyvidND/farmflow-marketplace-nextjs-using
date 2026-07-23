@@ -216,6 +216,21 @@ export interface ReviewSummary {
   reviews: Review[];
 }
 
+/* ---- Delivery slots (public /slots) ---- */
+
+/** A day (or day+window) the farmer is taking orders for. Day-level slots
+ *  carry null start/end times — render the date alone. `remaining` is the
+ *  live capacity left; <=0 means the slot is full and must be hidden, not
+ *  disabled (the API doesn't return a reason to show). */
+export interface Slot {
+  id: string;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  customerNote: string | null;
+  remaining: number;
+}
+
 /* ---- Public order recap (public /orders/:id — UUID-gated, no PII echoed) ---- */
 
 export interface PublicOrderItem {

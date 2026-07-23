@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Store, Truck } from "lucide-react";
@@ -8,13 +8,23 @@ import { toast } from "sonner";
 import { useCart } from "@/components/cart/cart-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { eurFromLv, EUR_TO_BGN } from "@/lib/money";
+import { eurFromLv, eur, bgn } from "@/lib/money";
 import { PUBLIC_BASE } from "@/lib/config";
 import { distinctSellers } from "@/lib/sellers";
 import { CARRIER_METHODS } from "@/lib/courier";
 import { unsatisfiedCompanions, companionMessage } from "@/lib/companion";
+import { getSlots, getCatalog, FALLBACK_STOREFRONT } from "@/lib/api";
+import type { Slot } from "@/lib/types";
 
 type Method = "pickup" | "address";
+
+/** "сряда, 30 юли" — full weekday, used on the picker cards. */
+const fmtSlotDate = (iso: string) =>
+  new Intl.DateTimeFormat("bg-BG", { weekday: "long", day: "numeric", month: "long" }).format(new Date(iso));
+
+/** "ср, 30 юли" — short weekday, used on the CTA once a day is picked. */
+const fmtSlotDateShort = (iso: string) =>
+  new Intl.DateTimeFormat("bg-BG", { weekday: "short", day: "numeric", month: "long" }).format(new Date(iso));
 
 /** Dormant today: `method` can only ever be "pickup"/"address" (neither is a
  *  carrier method), so this never renders yet — see src/lib/courier.ts. Typed
@@ -27,14 +37,37 @@ function showNDeliveriesNotice(method: string, sellerCount: number): boolean {
 
 export function CheckoutView() {
   const router = useRouter();
-  const { items, total, clear } = useCart();
+  const { items, clear } = useCart();
   const [method, setMethod] = useState<Method>("pickup");
   const sellers = distinctSellers(items);
   const sellerCount = sellers.length;
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ customerName: "", customerPhone: "", customerEmail: "", address: "", notes: "" });
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [slotId, setSlotId] = useState<string | null>(null);
+  const [delivery, setDelivery] = useState(FALLBACK_STOREFRONT.delivery);
+
+  // Client-side: availability (slots) and the fee/threshold settings both
+  // need fresh data, not the page's cached bootstrap — degrade silently, the
+  // form works fine without either (no slot section, no fee line).
+  useEffect(() => {
+    getSlots().then(setSlots).catch(() => {});
+    getCatalog()
+      .then((c) => setDelivery(c.storefront.delivery))
+      .catch(() => {});
+  }, []);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const availableSlots = slots.filter((s) => s.remaining > 0);
+  const selectedSlot = slotId ? availableSlots.find((s) => s.id === slotId) : undefined;
+
+  // Cart lines store EUR floats — round each line to cents before summing so
+  // float drift can't wrongly fail the free-delivery threshold comparison.
+  const subtotalStotinki = items.reduce((sum, it) => sum + Math.round(it.price * 100) * it.qty, 0);
+  const isFreeDelivery = delivery.freeThresholdStotinki > 0 && subtotalStotinki >= delivery.freeThresholdStotinki;
+  const feeStotinki = method === "address" && !isFreeDelivery ? delivery.addressFeeStotinki : 0;
+  const totalStotinki = subtotalStotinki + feeStotinki;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +99,7 @@ export function CheckoutView() {
       customerPhone: form.customerPhone.trim(),
       customerEmail: form.customerEmail.trim(),
       paymentMethod: "cod",
+      ...(slotId ? { slotId } : {}),
     };
     if (method === "pickup") {
       payload.deliveryType = "pickup";
@@ -156,6 +190,34 @@ export function CheckoutView() {
               )}
             </section>
 
+            {/* delivery day */}
+            {availableSlots.length > 0 && (
+              <section className="rounded-2xl border border-border bg-card p-5">
+                <h2 className="font-bold">{method === "pickup" ? "Ден за вземане" : "Ден за доставка"}</h2>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {availableSlots.map((s) => (
+                    <button
+                      type="button"
+                      key={s.id}
+                      onClick={() => setSlotId(s.id)}
+                      className={`flex min-h-11 flex-col items-start gap-0.5 rounded-xl border-2 p-4 text-left transition-colors ${
+                        slotId === s.id ? "border-primary bg-secondary" : "border-line-strong"
+                      }`}
+                    >
+                      <span className="block font-bold capitalize">{fmtSlotDate(s.date)}</span>
+                      {s.startTime && s.endTime && (
+                        <span className="block text-[13px] text-muted-foreground">{s.startTime}–{s.endTime}</span>
+                      )}
+                      <span className="block text-[13px] text-muted-foreground">{s.remaining} свободни</span>
+                      {s.customerNote && (
+                        <span className="block text-[13px] text-muted-foreground">{s.customerNote}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* contact */}
             <section className="rounded-2xl border border-border bg-card p-5">
               <h2 className="font-bold">Данни за контакт</h2>
@@ -180,11 +242,28 @@ export function CheckoutView() {
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+            <div className="mt-4 space-y-1.5 border-t border-border pt-4 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Продукти</span>
+                <span className="font-semibold">{eur(subtotalStotinki)}</span>
+              </div>
+              {method === "address" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Доставка</span>
+                  <span className="font-semibold">{feeStotinki === 0 ? "безплатно" : eur(feeStotinki)}</span>
+                </div>
+              )}
+            </div>
+            {method === "address" && !isFreeDelivery && delivery.freeThresholdStotinki > 0 && (
+              <p className="mt-2 text-[12.5px] text-muted-foreground">
+                Безплатна доставка над {eur(delivery.freeThresholdStotinki)}
+              </p>
+            )}
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
               <span className="font-bold">Общо</span>
               <span className="text-right">
-                <span className="font-heading text-xl font-semibold text-forest-dark">{eurFromLv(total)}</span>
-                <span className="ml-1.5 text-[13px] text-muted-foreground">({(total * EUR_TO_BGN).toFixed(2).replace(".", ",")} лв.)</span>
+                <span className="font-heading text-xl font-semibold text-forest-dark">{eur(totalStotinki)}</span>
+                <span className="ml-1.5 text-[13px] text-muted-foreground">{bgn(totalStotinki)}</span>
               </span>
             </div>
             {sellerCount >= 2 && (
@@ -194,7 +273,7 @@ export function CheckoutView() {
               </div>
             )}
             <Button type="submit" disabled={busy} className="mt-4 h-12 w-full rounded-xl text-base font-bold">
-              {busy ? "Изпращане…" : "Поръчай сега"}
+              {busy ? "Изпращане…" : selectedSlot ? `Поръчай · ${fmtSlotDateShort(selectedSlot.date)}` : "Поръчай сега"}
             </Button>
           </aside>
         </form>

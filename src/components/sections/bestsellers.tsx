@@ -26,7 +26,7 @@ export function Bestsellers({
       <div className="mx-auto w-full max-w-[1180px] px-4 py-10 sm:px-6">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3.5">
           <div>
-            <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">Пазарувай</div>
+            <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">Пазарувай</div>
             <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Най-продавани</h2>
             <p className="mt-2 max-w-[52ch] text-[15px] text-muted-foreground">
               Всеки продукт носи името на своя фермер — знаеш точно от кого купуваш.

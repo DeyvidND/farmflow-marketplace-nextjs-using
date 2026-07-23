@@ -7,8 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProductCard } from "@/components/product-card";
 import type { CardData } from "@/lib/card-data";
 import { ONLY_LOCAL_DELIVERY } from "@/lib/config";
+import { allVariantsSoldOut, priceDisplay } from "@/lib/pricing";
 
 const PAGE = 24;
+
+type SortBy = "new" | "price-asc" | "price-desc" | "name";
 
 export function ShopClient({
   cards,
@@ -29,6 +32,8 @@ export function ShopClient({
   const [cat, setCat] = useState("all");
   const [farmer, setFarmer] = useState("all");
   const [courierOnly, setCourierOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortBy>("new");
+  const [hideSoldOut, setHideSoldOut] = useState(false);
   const [shown, setShown] = useState(PAGE);
 
   const nq = q.trim().toLocaleLowerCase("bg");
@@ -52,25 +57,61 @@ export function ShopClient({
   // card ever qualifies today, so this is always false in production.
   const courierChipVisible = !ONLY_LOCAL_DELIVERY && cards.some(isCourierShippable);
 
+  // Mirrors ProductCard's own soldOut check (src/components/product-card.tsx)
+  // so the "hide sold out" toggle and the end-of-list push agree with what
+  // the card itself renders.
+  const isSoldOut = useCallback(
+    (c: CardData) => (c.remaining !== null && c.remaining === 0) || allVariantsSoldOut(c.product),
+    [],
+  );
+
   const matched = useMemo(
     () =>
       cards.filter((c) => {
         if (cat !== "all" && c.cat !== cat) return false;
         if (farmer !== "all" && c.farmerId !== farmer) return false;
         if (courierOnly && !isCourierShippable(c)) return false;
+        if (hideSoldOut && isSoldOut(c)) return false;
         if (nq) {
           const hay = `${c.product.name} ${c.farmerName ?? ""}`.toLocaleLowerCase("bg");
           if (!hay.includes(nq)) return false;
         }
         return true;
       }),
-    [cards, cat, farmer, courierOnly, isCourierShippable, nq],
+    [cards, cat, farmer, courierOnly, hideSoldOut, isCourierShippable, isSoldOut, nq],
   );
 
-  // Every filter change starts a fresh page.
+  // Applied after filtering, before pagination. Within whatever order the
+  // sort picks, sold-out products sink to the end instead of staying mixed
+  // in — Array#sort is stable (ES2019+), so ties (equal soldOut flag, cmp
+  // returning 0) keep their original relative order.
+  const sorted = useMemo(() => {
+    let cmp: (a: CardData, b: CardData) => number;
+    switch (sortBy) {
+      case "price-asc":
+        cmp = (a, b) => priceDisplay(a.product).headlineStotinki - priceDisplay(b.product).headlineStotinki;
+        break;
+      case "price-desc":
+        cmp = (a, b) => priceDisplay(b.product).headlineStotinki - priceDisplay(a.product).headlineStotinki;
+        break;
+      case "name":
+        cmp = (a, b) => a.product.name.localeCompare(b.product.name, "bg");
+        break;
+      default:
+        cmp = () => 0;
+    }
+    return [...matched].sort((a, b) => {
+      const aOut = isSoldOut(a);
+      const bOut = isSoldOut(b);
+      if (aOut !== bOut) return aOut ? 1 : -1;
+      return cmp(a, b);
+    });
+  }, [matched, sortBy, isSoldOut]);
+
+  // Every filter/sort change starts a fresh page.
   useEffect(() => {
     setShown(PAGE);
-  }, [cat, farmer, courierOnly, nq]);
+  }, [cat, farmer, courierOnly, hideSoldOut, sortBy, nq]);
 
   // Deep-link from the homepage's /shop#<categoryId> chips (home page.tsx
   // encodes the id with encodeURIComponent). Read post-mount so the first
@@ -89,13 +130,13 @@ export function ShopClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const visible = matched.slice(0, shown);
-  const hasMore = shown < matched.length;
-  const remaining = matched.length - shown;
+  const visible = sorted.slice(0, shown);
+  const hasMore = shown < sorted.length;
+  const remaining = sorted.length - shown;
 
   const loadMore = useCallback(() => {
-    setShown((s) => Math.min(matched.length, s + PAGE));
-  }, [matched.length]);
+    setShown((s) => Math.min(sorted.length, s + PAGE));
+  }, [sorted.length]);
 
   // IntersectionObserver auto-loads the next page; the button is the manual
   // fallback. Both call the same `loadMore`, so they can never disagree —
@@ -137,12 +178,13 @@ export function ShopClient({
     };
   }, [updateRailFade, categories.length]);
 
-  const filterActive = q.trim() !== "" || cat !== "all" || farmer !== "all" || courierOnly;
+  const filterActive = q.trim() !== "" || cat !== "all" || farmer !== "all" || courierOnly || hideSoldOut;
   const resetFilters = () => {
     setQ("");
     setCat("all");
     setFarmer("all");
     setCourierOnly(false);
+    setHideSoldOut(false);
   };
 
   const chips = [{ id: "all", name: "Всички" }, ...categories];
@@ -150,7 +192,7 @@ export function ShopClient({
   return (
     <div className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6">
       <div className="mb-2">
-        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">Пазарувай</div>
+        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">Пазарувай</div>
         <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight sm:text-4xl">Всички продукти</h1>
       </div>
 
@@ -232,18 +274,45 @@ export function ShopClient({
 
       {/* result bar */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {matched.length === 0 ? "Няма резултати" : `Показани ${visible.length} от ${matched.length}`}
-        </p>
-        {filterActive && (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            {matched.length === 0 ? "Няма резултати" : `Показани ${visible.length} от ${matched.length}`}
+          </p>
           <button
             type="button"
-            onClick={resetFilters}
-            className="text-sm font-bold text-primary underline-offset-2 hover:underline"
+            aria-pressed={hideSoldOut}
+            onClick={() => setHideSoldOut((v) => !v)}
+            className={`flex h-10 shrink-0 items-center rounded-full border px-4 text-sm font-bold transition-colors ${
+              hideSoldOut
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-line-strong bg-card text-foreground/75 hover:border-primary/40"
+            }`}
           >
-            Изчисти филтрите
+            Скрий изчерпаните
           </button>
-        )}
+        </div>
+        <div className="flex items-center gap-3">
+          <Select value={sortBy} onValueChange={(v) => setSortBy((v as SortBy) ?? "new")}>
+            <SelectTrigger className="h-10 min-w-[150px] rounded-xl border-line-strong bg-card text-sm">
+              <SelectValue placeholder="Подреди по" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="new">Ново</SelectItem>
+              <SelectItem value="price-asc">Цена ↑</SelectItem>
+              <SelectItem value="price-desc">Цена ↓</SelectItem>
+              <SelectItem value="name">Име А–Я</SelectItem>
+            </SelectContent>
+          </Select>
+          {filterActive && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="text-sm font-bold text-primary underline-offset-2 hover:underline"
+            >
+              Изчисти филтрите
+            </button>
+          )}
+        </div>
       </div>
 
       {matched.length === 0 ? (

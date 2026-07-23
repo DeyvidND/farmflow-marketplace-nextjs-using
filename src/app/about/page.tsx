@@ -15,7 +15,7 @@ export default function AboutPage() {
   return (
     <StoreShell>
       <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">За нас</div>
+        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">За нас</div>
         <h1 className="mt-2 font-heading text-4xl font-bold tracking-tight">Един пазар, много местни стопани</h1>
         <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-foreground/85">
           <p>

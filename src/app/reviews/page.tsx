@@ -33,7 +33,7 @@ export default async function ReviewsPage() {
   return (
     <StoreShell>
       <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">От клиентите</div>
+        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">От клиентите</div>
         <h1 className="mt-2 font-heading text-4xl font-bold tracking-tight">Отзиви</h1>
 
         {count > 0 ? (

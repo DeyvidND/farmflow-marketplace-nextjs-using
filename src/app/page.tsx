@@ -54,7 +54,7 @@ const TILE = [
 ];
 
 const Eyebrow = ({ children, fresh }: { children: React.ReactNode; fresh?: boolean }) => (
-  <div className={`text-[12.5px] font-extrabold uppercase tracking-[0.15em] ${fresh ? "text-honey" : "text-sage"}`}>
+  <div className={`text-[12.5px] font-extrabold uppercase tracking-[0.15em] ${fresh ? "text-honey-text" : "text-sage-text"}`}>
     {children}
   </div>
 );
@@ -102,7 +102,25 @@ export default async function Home() {
   // drop anything already shown there, and keep only genuinely in-window items
   // (min=0 disables recent()'s top-up, which would refill with old products).
   const shownInBest = new Set(bestFirst.map((p) => p.id));
-  const newProducts = recent(products.filter((p) => !shownInBest.has(p.id)), 14, 0).slice(0, 8);
+  const newPool = recent(products.filter((p) => !shownInBest.has(p.id)), 14, 0);
+  // One seller shouldn't be able to fill the whole rail — cap at 2 items per
+  // farmer (newest first, since newPool is already sorted that way), then
+  // backfill any remaining slots from the overflow so the rail still shows 8
+  // when there's enough inventory.
+  const farmerNewCounts = new Map<string, number>();
+  const newDiversified: typeof newPool = [];
+  const newOverflow: typeof newPool = [];
+  for (const p of newPool) {
+    const key = p.farmerId ?? "";
+    const n = farmerNewCounts.get(key) ?? 0;
+    if (n < 2) {
+      newDiversified.push(p);
+      farmerNewCounts.set(key, n + 1);
+    } else {
+      newOverflow.push(p);
+    }
+  }
+  const newProducts = [...newDiversified, ...newOverflow].slice(0, 8);
   const newFarmers = showFarmers ? recent(farmers, 14, 0) : [];
 
   const cards: CardData[] = bestFirst.map((p) => ({
@@ -140,6 +158,23 @@ export default async function Home() {
   const fowNote = boot.farmerOfWeek?.note ?? null;
 
   const freeThreshold = sf.delivery?.freeThresholdStotinki ?? 0;
+
+  // Illustrative "what's in the basket" preview for the subscription box —
+  // real products from distinct farmers, image-bearing ones preferred, never
+  // placeholder text (design principle 4).
+  const sampleCandidates = active.filter((p) => p.farmerId && farmerName(p.farmerId));
+  const sampleSeen = new Set<string>();
+  const sample: { product: string; farmer: string }[] = [];
+  for (const list of [sampleCandidates.filter((p) => p.imageUrl), sampleCandidates.filter((p) => !p.imageUrl)]) {
+    for (const p of list) {
+      if (sample.length >= 3) break;
+      const fid = p.farmerId as string;
+      if (sampleSeen.has(fid)) continue;
+      sampleSeen.add(fid);
+      sample.push({ product: p.name, farmer: (farmerName(fid) ?? "").split(/\s+/)[0] });
+    }
+    if (sample.length >= 3) break;
+  }
 
   return (
     <>
@@ -204,21 +239,40 @@ export default async function Home() {
                 <SeeAll href="/shop">Виж целия магазин</SeeAll>
               </div>
               <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
-                {cats.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/shop#${encodeURIComponent(c.id)}`}
-                    className="flex min-h-[138px] flex-col justify-between gap-4 rounded-2xl border border-black/5 bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(0,0,0,0.06)]"
-                  >
-                    <CatIcon name={c.icon} className="size-[30px] text-primary" />
-                    <div>
-                      <div className="text-[15.5px] font-bold">{c.name}</div>
-                      <div className="mt-1 text-[12.5px] text-muted-foreground">
-                        {c.count > 0 ? `${c.count} ${c.count === 1 ? "продукт" : "продукта"}` : "скоро"}
+                {cats.map((c) => {
+                  const body = (
+                    <>
+                      <CatIcon name={c.icon} className="size-[30px] text-primary" />
+                      <div>
+                        <div className="text-[15.5px] font-bold">{c.name}</div>
+                        <div className="mt-1 text-[12.5px] text-muted-foreground">
+                          {c.count > 0 ? `${c.count} ${c.count === 1 ? "продукт" : "продукта"}` : "скоро"}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </>
+                  );
+                  // Empty categories aren't clickable — there's nothing to land on.
+                  if (c.count === 0) {
+                    return (
+                      <div
+                        key={c.id}
+                        aria-disabled="true"
+                        className="flex min-h-[138px] cursor-default flex-col justify-between gap-4 rounded-2xl border border-black/5 bg-card p-5 opacity-60"
+                      >
+                        {body}
+                      </div>
+                    );
+                  }
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/shop#${encodeURIComponent(c.id)}`}
+                      className="flex min-h-[138px] flex-col justify-between gap-4 rounded-2xl border border-black/5 bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(0,0,0,0.06)]"
+                    >
+                      {body}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -394,7 +448,7 @@ export default async function Home() {
         )}
 
         {/* SUBSCRIPTION (client) */}
-        <SubscriptionBox />
+        <SubscriptionBox sample={sample} />
 
         {/* HOW IT WORKS — thin strip; the full 3-step walkthrough lives on /orders */}
         <section id="how" className="scroll-mt-32 border-y border-[#e1e8d8] bg-secondary">

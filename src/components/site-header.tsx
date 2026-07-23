@@ -14,14 +14,6 @@ import { cn } from "@/lib/utils";
 const CITIES = ["Цяла България", "София", "Пловдив", "Варна", "Бургас", "Русе", "Стара Загора", "Плевен"];
 const CITY_KEY = "mk-city";
 
-const PAGES = [
-  { label: "Магазин", href: "/shop" },
-  { label: "Поръчки", href: "/orders" },
-  { label: "За нас", href: "/about" },
-  { label: "Отзиви", href: "/reviews" },
-  { label: "Контакти", href: "/contact" },
-];
-
 export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -49,12 +41,20 @@ export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: b
 
   // Homepage → in-page anchors; elsewhere → resolve against "/".
   const a = (id: string) => (onHome ? `#${id}` : `/#${id}`);
-  const rail = [
-    ...(multiFarmer ? [{ label: "Фермери", href: onHome ? "#farmers" : "/farmers" }, { label: "Карта", href: "/karta" }] : []),
+
+  // Single nav source for both header surfaces (desktop rail + mobile sheet).
+  // Only "Категории" and "Как работи" are non-obvious (label doesn't match the
+  // route); everything else routes to the real page matching its label.
+  const NAV = [
     { label: "Категории", href: a("categories") },
-    { label: "Най-продавани", href: a("shop") },
-    { label: "Ново", href: a("new") },
-    { label: "Как работи", href: a("how") },
+    { label: "Магазин", href: "/shop" },
+    ...(multiFarmer ? [{ label: "Фермери", href: "/farmers" }, { label: "Карта", href: "/karta" }] : []),
+    { label: "Поръчки", href: "/orders" },
+    { label: "Как работи", href: "/orders" },
+    { label: "Статии", href: "/articles" },
+    { label: "Отзиви", href: "/reviews" },
+    { label: "Кои сме", href: "/about" },
+    { label: "Контакти", href: "/contact" },
   ];
 
   return (
@@ -131,14 +131,8 @@ export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: b
                 </SheetHeader>
                 <nav className="flex flex-col gap-1 px-4">
                   <Link href="/" className="rounded-lg px-3 py-3 text-[15px] font-semibold hover:bg-secondary" onClick={() => setOpen(false)}>Начало</Link>
-                  {multiFarmer && (
-                    <Link href="/farmers" className="rounded-lg px-3 py-3 text-[15px] font-semibold hover:bg-secondary" onClick={() => setOpen(false)}>Фермери</Link>
-                  )}
-                  {multiFarmer && (
-                    <Link href="/karta" className="rounded-lg px-3 py-3 text-[15px] font-semibold hover:bg-secondary" onClick={() => setOpen(false)}>Карта</Link>
-                  )}
-                  {PAGES.map((p) => (
-                    <Link key={p.href} href={p.href} className="rounded-lg px-3 py-3 text-[15px] font-semibold hover:bg-secondary" onClick={() => setOpen(false)}>{p.label}</Link>
+                  {NAV.map((l) => (
+                    <Link key={l.label} href={l.href} className="rounded-lg px-3 py-3 text-[15px] font-semibold hover:bg-secondary" onClick={() => setOpen(false)}>{l.label}</Link>
                   ))}
                   <div className="mt-3 px-3">
                     <Select value={city ?? undefined} onValueChange={onCity}>
@@ -160,19 +154,13 @@ export function SiteHeader({ name, multiFarmer }: { name: string; multiFarmer: b
         {/* discovery rail */}
         {/* py-2 on links (not just the bar) keeps every nav item a ~40px target. */}
         <nav aria-label="Разгледай" className="no-scrollbar mt-3 flex items-center gap-0 overflow-x-auto border-t border-border py-1 max-lg:hidden">
-          {rail.map((l, i) => (
-            <span key={l.href} className="flex items-center">
+          {NAV.map((l, i) => (
+            <span key={l.label} className="flex items-center">
               {i > 0 && <span className="mx-3 text-line-strong xl:mx-4.5">·</span>}
               <Link href={l.href} className="whitespace-nowrap py-2 text-[14.5px] font-semibold text-foreground/75 hover:text-primary">
                 {l.label}
               </Link>
             </span>
-          ))}
-          <span className="mx-4 h-4 w-px shrink-0 bg-line-strong xl:mx-6" />
-          {[...(multiFarmer ? [{ label: "Фермери", href: "/farmers" }, { label: "Карта", href: "/karta" }] : []), ...PAGES].map((l) => (
-            <Link key={l.href} href={l.href} className="mr-4 whitespace-nowrap py-2 text-[14.5px] font-semibold text-muted-foreground hover:text-primary xl:mr-5">
-              {l.label}
-            </Link>
           ))}
         </nav>
       </div>

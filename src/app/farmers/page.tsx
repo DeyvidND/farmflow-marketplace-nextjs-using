@@ -33,7 +33,7 @@ export default async function FarmersPage() {
   return (
     <StoreShell>
       <div className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6">
-        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">Открий</div>
+        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">Открий</div>
         <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight sm:text-4xl">Нашите фермери</h1>
         <p className="mt-2 text-[15px] text-muted-foreground">Всеки продукт идва от истински човек и истинско стопанство.</p>
 

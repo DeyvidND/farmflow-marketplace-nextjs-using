@@ -14,6 +14,9 @@
   /* Brand tokens → Tailwind utilities (bg-honey, text-sage, …). */
   --color-honey: var(--honey);
   --color-sage: var(--sage);
+  /* AA-safe variants for SMALL text (eyebrows, meta) — see :root / .dark for the math. */
+  --color-sage-text: var(--sage-text);
+  --color-honey-text: var(--honey-text);
   --color-forest: var(--primary);
   --color-forest-dark: var(--forest-dark);
   --color-line-strong: var(--line-strong);
@@ -86,6 +89,17 @@
   --forest-dark: #26492f;
   --line-strong: #dccfb1;
 
+  /* AA text variants of sage/honey, for SMALL text (eyebrows ~12.5px, meta) on
+     --background #faf6ec. --sage/--honey above fail 4.5:1 at small sizes (they're
+     tuned for fills/badges at large or bold sizes, where 3:1 is the bar) — these
+     are darkened versions of the same hue, WCAG-checked against #faf6ec:
+       #4a6340 (sage-text)  → relative luminance ≈0.1075; bg ≈0.9233
+                                 contrast = (0.9233+.05)/(0.1075+.05) ≈ 6.18:1  (AA ✓, ≥4.5)
+       #8f5d29 (honey-text) → relative luminance ≈0.1383
+                                 contrast = (0.9233+.05)/(0.1383+.05) ≈ 5.17:1  (AA ✓, ≥4.5) */
+  --sage-text: #4a6340;
+  --honey-text: #8f5d29;
+
   --chart-1: #33603e;
   --chart-2: #b5793b;
   --chart-3: #5e7a50;
@@ -126,6 +140,12 @@
   --sage: #9cb389;
   --forest-dark: #0f1c0b;
   --line-strong: rgba(255, 255, 255, 0.18);
+
+  /* AA text variants for SMALL text on --background #1c1712 (relative luminance ≈0.0090):
+       #a8c093 (sage-text)  → luminance ≈0.4814; contrast = (0.4814+.05)/(0.0090+.05) ≈ 9.00:1  (AA ✓)
+       #dba86c (honey-text) → luminance ≈0.4416; contrast = (0.4416+.05)/(0.0090+.05) ≈ 8.33:1  (AA ✓) */
+  --sage-text: #a8c093;
+  --honey-text: #dba86c;
 }
 
 @layer base {

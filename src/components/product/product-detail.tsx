@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, Plus, Minus, ArrowLeft, Leaf, Check } from "lucide-react";
+import { BadgeCheck, Plus, Minus, Leaf, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCart } from "@/components/cart/cart-provider";
 import { CfImg } from "@/components/cf-img";
+import { ProductCard } from "@/components/product-card";
 import { cfImage, cfSrcset } from "@/lib/img";
 import { coverCropStyle } from "@/lib/cover";
 import { isBundle, bundleMemberPhotos } from "@/lib/catalog";
@@ -24,6 +25,39 @@ function initials(name: string) {
   return name.trim().split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toLocaleUpperCase("bg");
 }
 
+function firstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+/** Everything ProductCard needs for one related product, precomputed server-side. */
+export interface RelatedCard {
+  product: Product;
+  farmerId: string | null;
+  farmerName: string | null;
+  farmerSlug: string | null;
+  farmerImage: string | null;
+  remaining: number | null;
+}
+
+function RelatedRail({ items }: { items: RelatedCard[] }) {
+  return (
+    <div className="no-scrollbar mt-4 flex gap-4 overflow-x-auto pb-2">
+      {items.map((item) => (
+        <div key={item.product.id} className="w-[240px] shrink-0">
+          <ProductCard
+            product={item.product}
+            farmerId={item.farmerId}
+            farmerName={item.farmerName}
+            farmerSlug={item.farmerSlug}
+            farmerImage={item.farmerImage}
+            remaining={item.remaining}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ProductDetail({
   product: p,
   farmerId,
@@ -32,6 +66,13 @@ export function ProductDetail({
   farmerImage,
   farmerLegal,
   remaining,
+  categoryId,
+  categoryName,
+  moreFromFarmer,
+  similarProducts,
+  deliveryEnabled,
+  addressFeeStotinki,
+  freeThresholdStotinki,
 }: {
   product: Product;
   farmerId: string | null;
@@ -40,6 +81,13 @@ export function ProductDetail({
   farmerImage: string | null;
   farmerLegal: FarmerLegal | null;
   remaining: number | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  moreFromFarmer: RelatedCard[];
+  similarProducts: RelatedCard[];
+  deliveryEnabled: boolean;
+  addressFeeStotinki: number;
+  freeThresholdStotinki: number;
 }) {
   const { add, items } = useCart();
   const gallery = p.images?.length ? p.images : p.imageUrl ? [p.imageUrl] : [];
@@ -71,6 +119,7 @@ export function ProductDetail({
   // variant picker above changes what "add" even means).
   const isCompanionManaged = !!p.requiresCompanion && !soldOut && !hasV;
   const companionLocked = isCompanionManaged && !companionOk;
+  const addDisabled = soldOut || companionLocked;
 
   const onAdd = () => {
     const label = selVariant ? `${p.name} · ${selVariant.label}` : p.name;
@@ -91,10 +140,22 @@ export function ProductDetail({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6">
-      <Link href="/shop" className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary">
-        <ArrowLeft className="size-4" /> Обратно към магазина
-      </Link>
+    <div className="mx-auto w-full max-w-[1180px] px-4 py-8 pb-28 sm:px-6 sm:pb-8">
+      <nav aria-label="Насочваща пътека" className="mb-5 flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
+        <Link href="/shop" className="font-semibold hover:text-primary hover:underline">
+          Магазин
+        </Link>
+        {categoryName && categoryId && (
+          <>
+            <span aria-hidden>·</span>
+            <Link href={`/shop#${encodeURIComponent(categoryId)}`} className="font-semibold hover:text-primary hover:underline">
+              {categoryName}
+            </Link>
+          </>
+        )}
+        <span aria-hidden>·</span>
+        <span className="truncate">{p.name}</span>
+      </nav>
       <div className="grid gap-8 md:grid-cols-2">
         {/* gallery */}
         <div>
@@ -283,6 +344,16 @@ export function ProductDetail({
             </div>
           )}
 
+          <div className="mt-4 rounded-xl bg-[#f7f3e8] p-3.5 text-[13px] leading-relaxed text-foreground/80">
+            <p>✓ Вземане от място — безплатно</p>
+            {deliveryEnabled && (
+              <p className="mt-1">
+                ✓ Доставка до адрес — {eur(addressFeeStotinki)}
+                {freeThresholdStotinki > 0 && <> · безплатна над {eur(freeThresholdStotinki)}</>}
+              </p>
+            )}
+          </div>
+
           {/* qty + add */}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <div className="flex items-center rounded-xl border-2 border-primary">
@@ -296,7 +367,7 @@ export function ProductDetail({
             </div>
             <Button
               onClick={onAdd}
-              disabled={soldOut || companionLocked}
+              disabled={addDisabled}
               title={
                 companionLocked
                   ? companionMin
@@ -337,6 +408,40 @@ export function ProductDetail({
           )}
         </div>
       </div>
+
+      {moreFromFarmer.length > 0 && (
+        <section className="mt-12">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">
+            Още от {firstName(farmerName ?? "фермера")}
+          </h2>
+          <RelatedRail items={moreFromFarmer} />
+        </section>
+      )}
+
+      {similarProducts.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">Подобни продукти</h2>
+          <RelatedRail items={similarProducts} />
+        </section>
+      )}
+
+      {!soldOut && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card px-4 pb-[env(safe-area-inset-bottom)] pt-3 sm:hidden">
+          <div className="flex items-center gap-3 pb-3">
+            <div className="flex flex-col leading-tight">
+              <span className="font-heading text-lg font-semibold text-forest-dark">{eur(priceStotinki)}</span>
+              <span className="text-[11px] text-muted-foreground">{bgn(priceStotinki)}</span>
+            </div>
+            <Button
+              onClick={onAdd}
+              disabled={addDisabled}
+              className="h-12 flex-1 rounded-xl text-base font-bold"
+            >
+              {companionLocked ? "🔒 Заключено" : "Добави"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // Server-side storefront data fetch. One round trip via /bootstrap; Next caches
 // + revalidates so repeated renders within the window are free.
 import { PUBLIC_BASE } from './config';
-import type { Article, Bootstrap, PublicOrderSummary, ReviewSummary, Storefront } from './types';
+import type { Article, Bootstrap, PublicOrderSummary, ReviewSummary, Slot, Storefront } from './types';
 
 export const FALLBACK_STOREFRONT: Storefront = {
   name: 'Фермерски пазари',
@@ -86,5 +86,18 @@ export async function getPublicOrder(id: string): Promise<PublicOrderSummary | n
     return (await res.json()) as PublicOrderSummary;
   } catch {
     return null;
+  }
+}
+
+/** Delivery day/slot options open for ordering. Never cached — availability
+ *  (`remaining`) moves as other shoppers check out; called from the checkout
+ *  form itself. Degrades to [] on any failure so the picker just stays hidden. */
+export async function getSlots(): Promise<Slot[]> {
+  try {
+    const res = await fetch(`${PUBLIC_BASE}/slots`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return (await res.json()) as Slot[];
+  } catch {
+    return [];
   }
 }

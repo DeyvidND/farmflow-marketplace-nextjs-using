@@ -23,7 +23,7 @@ export default async function KartaPage() {
   return (
     <StoreShell>
       <div className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6">
-        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">Откъде идва храната</div>
+        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">Откъде идва храната</div>
         <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight sm:text-4xl">Карта на фермерите</h1>
         <p className="mt-2 max-w-2xl text-[15px] text-muted-foreground">
           Нашите фермери и стопанства из България — по адреса на стопанството, където е известен.

@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PUBLIC_BASE } from "@/lib/config";
 
-export function SubscriptionBox() {
+export interface SubscriptionSample {
+  product: string;
+  farmer: string;
+}
+
+export function SubscriptionBox({ sample }: { sample?: SubscriptionSample[] }) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -55,6 +60,19 @@ export function SubscriptionBox() {
                 </span>
               ))}
             </div>
+            {sample && sample.length > 0 && (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <span className="text-[13px] font-semibold text-[#c9d6be]">Например тази седмица:</span>
+                {sample.map((s) => (
+                  <span
+                    key={`${s.farmer}-${s.product}`}
+                    className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[12.5px] font-semibold text-[#eef2e7]"
+                  >
+                    {s.product} · {s.farmer}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="min-w-[260px] max-w-[420px] flex-1">
             <form onSubmit={submit} className="rounded-2xl bg-[#f4efe1] p-5">

@@ -39,7 +39,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </Link>
 
         {(a.category || fmtDate(a.publishedAt)) && (
-          <div className="mt-5 text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">
+          <div className="mt-5 text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">
             {[a.category, fmtDate(a.publishedAt)].filter(Boolean).join(" · ")}
           </div>
         )}

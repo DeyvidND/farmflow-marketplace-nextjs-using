@@ -17,7 +17,7 @@ export default function OrdersPage() {
   return (
     <StoreShell>
       <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
-        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">Просто и прозрачно</div>
+        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">Просто и прозрачно</div>
         <h1 className="mt-2 font-heading text-4xl font-bold tracking-tight">Как стига храната до теб</h1>
         <div className="mt-8 grid gap-5 sm:grid-cols-3">
           {STEPS.map((s) => (

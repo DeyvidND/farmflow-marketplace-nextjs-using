@@ -20,7 +20,7 @@ export default async function ArticlesPage() {
   return (
     <StoreShell>
       <div className="mx-auto w-full max-w-[1180px] px-4 py-10 sm:px-6">
-        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage">От пазара</div>
+        <div className="text-[12.5px] font-extrabold uppercase tracking-[0.15em] text-sage-text">От пазара</div>
         <h1 className="mt-2 font-heading text-4xl font-bold tracking-tight">Статии</h1>
         <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-muted-foreground">
           Историите на фермерите и съвети за сезонните продукти.
