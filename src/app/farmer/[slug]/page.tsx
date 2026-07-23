@@ -71,7 +71,7 @@ export default async function FarmerPage({ params }: { params: Promise<{ slug: s
 
   return (
     <StoreShell>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
       <div className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6">
         {/* farmer header */}
         <div className="flex flex-wrap items-center gap-5 rounded-2xl border border-border bg-card p-6 sm:p-8">
