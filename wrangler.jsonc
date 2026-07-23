@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Its OWN worker — deliberately NOT the chaika worker (`fermerski-pazar-chaika`)
+  // nor the Astro `farmflow-marketplace` worker, so deploying here never touches
+  // those. Deploys to farmflow-marketplace-next.<subdomain>.workers.dev.
+  "name": "farmflow-marketplace-next",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-03-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}
